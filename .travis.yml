@@ -1,0 +1,8 @@
+language: java
+sudo: false
+jdk:
+  - oraclejdk8
+notifications:
+  email:
+    recipients:
+      - skypencil+travis@gmail.com
