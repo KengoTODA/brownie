@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StaticServer {
+public class Server {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String directory = createDirectory();
     private Vertx vertx;
