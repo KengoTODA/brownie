@@ -13,6 +13,17 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/).
 - [ ] Provide admin console to manage running tasks and stored files
 - [ ] Provide Docker container to run brownie cluster
 
+# How to run
+
+```
+$ mvn clean package
+$ java -jar target/brownie-*-SNAPSHOT.jar
+```
+or
+```
+$ mvn clean package
+$ java -DBROWNIE_CLUSTER_HOST="localhost" -jar target/brownie-*-SNAPSHOT.jar
+```
 
 # Copyright and license
 
