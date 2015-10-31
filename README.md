@@ -17,12 +17,12 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/).
 
 ```
 $ mvn clean package
-$ java -jar target/brownie-*-SNAPSHOT.jar
+$ java -jar target/brownie-*.jar
 ```
 or
 ```
 $ mvn clean package
-$ java -DBROWNIE_CLUSTER_HOST="localhost" -jar target/brownie-*-SNAPSHOT.jar
+$ java -DBROWNIE_CLUSTER_HOST="localhost" -jar target/brownie-*.jar
 ```
 
 # Copyright and license
