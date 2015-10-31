@@ -28,7 +28,6 @@ public class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
-        com.esotericsoftware.minlog.Log.INFO();
     }
 
     @PostConstruct
