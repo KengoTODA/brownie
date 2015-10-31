@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -50,10 +51,12 @@ public class StaticServer {
         router.route("/form").handler(BodyHandler.create().setUploadsDirectory(directory));
         router.post("/form").handler(ctx -> {
             ctx.fileUploads().forEach(fileUpload -> {
-                vertx.eventBus().send("file-uploaded", fileUpload.uploadedFileName());
+                Task task = new Task(fileUpload.uploadedFileName(), Collections.singleton("vga"));
+                vertx.eventBus().send("file-uploaded", task);
             });
-            ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/plain");
-            ctx.response().end("registered");
+            ctx.response()
+                .putHeader(HttpHeaders.CONTENT_TYPE, "text/plain")
+                .end("registered");
         });
         vertx.createHttpServer().requestHandler(router::accept).listen(8080);
     }

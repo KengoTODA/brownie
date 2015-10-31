@@ -1,14 +1,14 @@
 package jp.skypencil.brownie;
 
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
-
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,13 +28,15 @@ public class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
+        com.esotericsoftware.minlog.Log.INFO();
     }
 
     @PostConstruct
     public void prepareCluster() {
         if (clusterHost.isEmpty()) {
             logger.info("STANDALONE mode: environment variable BROWNIE_CLUSTER_HOST not found");
-            vertxFuture = Future.succeededFuture(Vertx.vertx());
+            Vertx vertx = Vertx.vertx();
+            vertxFuture = Future.succeededFuture(vertx);
             return;
         }
 
@@ -62,7 +64,8 @@ public class Application {
         if (vertxFuture.failed()) {
             throw new IllegalStateException("Failed to connect to cluster", vertxFuture.cause());
         }
-        return vertxFuture.result();
+        Vertx vertx = vertxFuture.result();
+        vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
+        return vertx;
     }
-
 }

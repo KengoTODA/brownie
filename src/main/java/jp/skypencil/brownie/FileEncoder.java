@@ -9,8 +9,6 @@ import io.vertx.core.eventbus.Message;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileEncoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final List<String> resolutions = Arrays.asList("svga", "vga", "hd480");
     private Vertx vertx;
 
     @Resource
@@ -33,12 +30,13 @@ public class FileEncoder {
 
     @PostConstruct
     public void listenEvent() {
-        vertx.eventBus().localConsumer("file-uploaded", (Message<String> message) -> {
-            File uploadedFile = new File(message.body());
+        vertx.eventBus().localConsumer("file-uploaded", (Message<Task> message) -> {
+            Task task = message.body();
+            File uploadedFile = new File(task.getUploadedFileName());
             logger.debug("received {}", uploadedFile);
 
-            for (String resolution : resolutions) {
-                convertToAllResolution(message.body(), resolution);
+            for (String resolution : task.getResolutions()) {
+                convertToAllResolution(task.getUploadedFileName(), resolution);
             }
         });
     }
