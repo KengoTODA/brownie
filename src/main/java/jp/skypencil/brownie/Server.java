@@ -17,6 +17,7 @@ import javax.annotation.Resource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,6 +25,9 @@ public class Server {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String directory = createDirectory();
     private Vertx vertx;
+
+    @Value("${BROWNIE_CLUSTER_HTTP_PORT:8080}")
+    private int httpPort;
 
     private String createDirectory() {
         try {
@@ -58,6 +62,7 @@ public class Server {
                 .putHeader(HttpHeaders.CONTENT_TYPE, "text/plain")
                 .end("registered");
         });
-        vertx.createHttpServer().requestHandler(router::accept).listen(8080);
+        vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
+        logger.info("HTTP server is listening {} port", httpPort);
     }
 }
