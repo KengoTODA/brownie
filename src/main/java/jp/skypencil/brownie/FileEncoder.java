@@ -9,9 +9,12 @@ import io.vertx.core.eventbus.Message;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+
+import jp.skypencil.brownie.fs.DistributedFileSystem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,23 +28,39 @@ public class FileEncoder {
     @Resource
     private Vertx vertx;
 
+    @Resource
+    private DistributedFileSystem fileSystem;
+
     @PostConstruct
     public void listenEvent() {
         vertx.eventBus().localConsumer("file-uploaded", (Message<Task> message) -> {
             Task task = message.body();
-            File uploadedFile = new File(task.getUploadedFileName());
-            logger.debug("received {}", uploadedFile);
-
-            for (String resolution : task.getResolutions()) {
-                convertToAllResolution(task.getUploadedFileName(), resolution);
-            }
+            fileSystem.load(task.getKey(), loaded -> {
+                if (loaded.failed()) {
+                    throw new RuntimeException("Failed to load file from distribtued file system", loaded.cause());
+                }
+                try {
+                    File downloadedFile = Files.createTempFile("brownie-downloaded", ".video").toFile();
+                    vertx.fileSystem().writeFile(downloadedFile.getAbsolutePath(), loaded.result(), written -> {
+                        if (written.failed()) {
+                            throw new RuntimeException("Failed to store file onto local file system", loaded.cause());
+                        }
+                        logger.debug("received {}", downloadedFile);
+                        for (String resolution : task.getResolutions()) {
+                            convertToAllResolution(downloadedFile, resolution);
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
         });
     }
 
-    private void convertToAllResolution(String targetFilePath, String resolution) {
+    private void convertToAllResolution(File targetFile, String resolution) {
         final int processors = Runtime.getRuntime().availableProcessors();
         vertx.executeBlocking(
-                convert(targetFilePath, resolution, processors),
+                convert(targetFile, resolution, processors),
                 true,
                 handleResult());
     }
@@ -56,13 +75,13 @@ public class FileEncoder {
         };
     }
 
-    private Handler<Future<Object>> convert(String targetFilePath,
+    private Handler<Future<Object>> convert(File targetFile,
             String resolution, final int processors) {
         return future -> {
-            logger.info("Converting {} to {}", targetFilePath, resolution);
-            String resultFileName = targetFilePath + "-" + resolution + ".webm";
+            logger.info("Converting {} to {}", targetFile, resolution);
+            String resultFileName = targetFile.getAbsolutePath() + "-" + resolution + ".webm";
             ProcessBuilder builder = new ProcessBuilder().command("ffmpeg",
-                    "-i", targetFilePath,
+                    "-i", targetFile.getAbsolutePath(),
                     "-s", resolution,
                     // Vorbis encoder only supports 2 channels. http://stackoverflow.com/a/19005961
                     "-ac", "2",

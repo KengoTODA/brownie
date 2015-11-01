@@ -15,6 +15,8 @@ import java.util.Collections;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+import jp.skypencil.brownie.fs.DistributedFileSystem;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,9 @@ public class Server {
     private final String directory = createDirectory();
     @Resource
     private Vertx vertx;
+
+    @Resource
+    private DistributedFileSystem fileSystem;
 
     @Value("${BROWNIE_CLUSTER_HTTP_PORT:8080}")
     private int httpPort;
@@ -52,7 +57,17 @@ public class Server {
         router.post("/form").handler(ctx -> {
             ctx.fileUploads().forEach(fileUpload -> {
                 Task task = new Task(fileUpload.uploadedFileName(), Collections.singleton("vga"));
-                vertx.eventBus().send("file-uploaded", task);
+                vertx.fileSystem().readFile(fileUpload.uploadedFileName(), read -> {
+                    if (read.failed()) {
+                        throw new RuntimeException("Failed to load file from file system", read.cause());
+                    }
+                    fileSystem.store(task.getKey(), read.result(), stored -> {
+                        if (stored.failed()) {
+                            throw new RuntimeException("Failed to store file onto file system", stored.cause());
+                        }
+                        vertx.eventBus().send("file-uploaded", task);
+                    });
+                });
             });
             ctx.response()
                 .putHeader(HttpHeaders.CONTENT_TYPE, "text/plain")
