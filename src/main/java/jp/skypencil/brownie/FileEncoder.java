@@ -67,6 +67,10 @@ public class FileEncoder {
             ProcessBuilder builder = new ProcessBuilder().command("ffmpeg",
                     "-i", targetFilePath,
                     "-s", resolution,
+                    // Vorbis encoder only supports 2 channels. http://stackoverflow.com/a/19005961
+                    "-ac", "2",
+                    // 'vorbis' is now experimental, we need following parameter to enable it.
+                    "-strict", "-2",
                     "-n",
                     "-threads", Integer.toString(processors * 3 / 2),
                     resultFileName);
