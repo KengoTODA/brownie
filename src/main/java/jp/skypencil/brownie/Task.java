@@ -13,13 +13,16 @@ public final class Task {
     private final Set<String> resolutions;
 
     Task(String uploadedFileName, Set<String> resolutions) {
-        // TODO use UUIDv1
-        this(UUID.randomUUID(), uploadedFileName, resolutions);
+        this(generateUuidV1(), uploadedFileName, resolutions);
     }
 
     Task(UUID key, String uploadedFileName, Set<String> resolutions) {
         this.key = key;
         this.uploadedFileName = uploadedFileName;
         this.resolutions = new HashSet<>(resolutions);
+    }
+
+    private static UUID generateUuidV1() {
+        return UUID.fromString(new com.eaio.uuid.UUID().toString());
     }
 }
