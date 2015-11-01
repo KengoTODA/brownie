@@ -11,7 +11,7 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/).
 - [ ] Support distributed file systems like AWS S3, Aliyun OOS, HDFS etc.
 - [ ] Support multi resolutions to support many kinds of client
 - [ ] Provide admin console to manage running tasks and stored files
-- [ ] Provide Docker container to run brownie cluster
+- [x] Provide Docker container to run brownie cluster
 
 # How to run
 
