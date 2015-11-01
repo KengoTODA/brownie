@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 public class Server {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String directory = createDirectory();
+    @Resource
     private Vertx vertx;
 
     @Value("${BROWNIE_CLUSTER_HTTP_PORT:8080}")
@@ -37,11 +38,6 @@ public class Server {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    @Resource
-    public void setVertx(Vertx vertx) {
-        this.vertx = vertx;
     }
 
     @PostConstruct

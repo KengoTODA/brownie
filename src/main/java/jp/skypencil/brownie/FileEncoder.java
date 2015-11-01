@@ -21,12 +21,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileEncoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private Vertx vertx;
 
     @Resource
-    public void setVertx(Vertx vertx) {
-        this.vertx = vertx;
-    }
+    private Vertx vertx;
 
     @PostConstruct
     public void listenEvent() {
