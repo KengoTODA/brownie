@@ -41,7 +41,7 @@ RUN cd $FFMPEG_SOURCE/ffmpeg-2.8.1 && \
   make install && \
   make distclean && \
   hash -r
-
+RUN ln -s $HOME/bin/ffmpeg /usr/local/bin/
 
 # Install brownie
 
