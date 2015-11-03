@@ -3,6 +3,7 @@ package jp.skypencil.brownie.fs;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.streams.WriteStream;
 
 import java.util.UUID;
 
@@ -11,5 +12,6 @@ import java.util.UUID;
  */
 public interface DistributedFileSystem {
     void load(UUID key, Handler<AsyncResult<Buffer>> handler);
+    void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, Handler<AsyncResult<Void>> handler);
     void store(UUID key, Buffer buffer, Handler<AsyncResult<Void>> handler);
 }

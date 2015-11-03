@@ -5,11 +5,13 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.file.OpenOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -35,44 +37,75 @@ public class FileEncoder {
     public void listenEvent() {
         vertx.eventBus().localConsumer("file-uploaded", (Message<Task> message) -> {
             Task task = message.body();
-            fileSystem.load(task.getKey(), loaded -> {
-                if (loaded.failed()) {
-                    throw new RuntimeException("Failed to load file from distribtued file system", loaded.cause());
+            download(task.getKey(), downloaded -> {
+                if (downloaded.failed()) {
+                    logger.error("Failed to download file (key: {}) from distributed file system", task.getKey(), downloaded.cause());
+                    message.fail(1, "Failed to download file from distributed file system");
+                    return;
                 }
-                try {
-                    File downloadedFile = Files.createTempFile("brownie-downloaded", ".video").toFile();
-                    vertx.fileSystem().writeFile(downloadedFile.getAbsolutePath(), loaded.result(), written -> {
-                        if (written.failed()) {
-                            throw new RuntimeException("Failed to store file onto local file system", loaded.cause());
+                File downloadedFile = downloaded.result();
+                logger.debug("Downloaded file (key: {}) to {}",
+                        task.getKey(),
+                        downloadedFile);
+                for (String resolution : task.getResolutions()) {
+                    convertToAllResolution(downloadedFile, resolution, converted -> {
+                        if (converted.failed()) {
+                            logger.error("Failed to convert file (key: {}, resolution: {})",
+                                    task.getKey(),
+                                    resolution,
+                                    converted.cause());
+                            // TODO do we need to call message.fail() even when file is invalid?
+                            // TODO how to handle only a part of resolutions have problem?
+                            message.fail(2, "Failed to convert file");
+                            return;
                         }
-                        logger.debug("received {}", downloadedFile);
-                        for (String resolution : task.getResolutions()) {
-                            convertToAllResolution(downloadedFile, resolution);
-                        }
+                        String resultFileName = converted.result().toString();
+                        logger.info("Converted file (key: {}, resolution: {}) to {}",
+                                task.getKey(),
+                                resolution,
+                                resultFileName);
                     });
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
                 }
             });
         });
     }
 
-    private void convertToAllResolution(File targetFile, String resolution) {
+    private void download(UUID key, Handler<AsyncResult<File>> handler) {
+        File downloadedFile;
+        Future<File> future = Future.future();
+        // TODO use vertx.fileSystem() to create temp file
+        try {
+            downloadedFile = Files.createTempFile("brownie-downloaded", ".video").toFile();
+        } catch (IOException e) {
+            future.fail(e);
+            handler.handle(future);
+            return;
+        }
+
+        vertx.fileSystem().open(downloadedFile.getAbsolutePath(), new OpenOptions().setWrite(true), result -> {
+            if (result.failed()) {
+                future.fail(result.cause());
+                handler.handle(future);
+                return;
+            }
+
+            fileSystem.loadAndPipe(key, result.result(), finished -> {
+                if (finished.failed()) {
+                    future.fail(finished.cause());
+                } else {
+                    future.complete(downloadedFile);
+                }
+                handler.handle(future);
+            });
+        });
+    }
+
+    private void convertToAllResolution(File targetFile, String resolution, Handler<AsyncResult<Object>> handler) {
         final int processors = Runtime.getRuntime().availableProcessors();
         vertx.executeBlocking(
                 convert(targetFile, resolution, processors),
                 true,
-                handleResult());
-    }
-
-    private Handler<AsyncResult<Object>> handleResult() {
-        return result -> {
-            if (result.failed()) {
-                throw new RuntimeException("Failed to convert file", result.cause());
-            }
-            String resultFileName = result.result().toString();
-            logger.info("Converted to {}", resultFileName);
-        };
+                handler);
     }
 
     private Handler<Future<Object>> convert(File targetFile,
