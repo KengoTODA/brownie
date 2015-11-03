@@ -4,15 +4,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.file.OpenOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.UUID;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import jp.skypencil.brownie.fs.DistributedFileSystem;
@@ -24,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class FileEncoder {
-    private static final String TEMP_DIR = System.getenv("java.io.tmpdir");
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
@@ -33,65 +28,7 @@ public class FileEncoder {
     @Resource
     private DistributedFileSystem fileSystem;
 
-    @PostConstruct
-    public void listenEvent() {
-        vertx.eventBus().localConsumer("file-uploaded", (Message<Task> message) -> {
-            Task task = message.body();
-            download(task.getKey(), downloaded -> {
-                if (downloaded.failed()) {
-                    logger.error("Failed to download file (key: {}) from distributed file system", task.getKey(), downloaded.cause());
-                    message.fail(1, "Failed to download file from distributed file system");
-                    return;
-                }
-                File downloadedFile = downloaded.result();
-                logger.debug("Downloaded file (key: {}) to {}",
-                        task.getKey(),
-                        downloadedFile);
-                for (String resolution : task.getResolutions()) {
-                    convertToAllResolution(downloadedFile, resolution, converted -> {
-                        if (converted.failed()) {
-                            logger.error("Failed to convert file (key: {}, resolution: {})",
-                                    task.getKey(),
-                                    resolution,
-                                    converted.cause());
-                            // TODO do we need to call message.fail() even when file is invalid?
-                            // TODO how to handle only a part of resolutions have problem?
-                            message.fail(2, "Failed to convert file");
-                            return;
-                        }
-                        String resultFileName = converted.result().toString();
-                        logger.info("Converted file (key: {}, resolution: {}) to {}",
-                                task.getKey(),
-                                resolution,
-                                resultFileName);
-                    });
-                }
-            });
-        });
-    }
-
-    private void download(UUID key, Handler<AsyncResult<File>> handler) {
-        String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
-        Future<File> future = Future.future();
-        vertx.fileSystem().open(downloadedFile, new OpenOptions().setWrite(true), result -> {
-            if (result.failed()) {
-                future.fail(result.cause());
-                handler.handle(future);
-                return;
-            }
-
-            fileSystem.loadAndPipe(key, result.result(), finished -> {
-                if (finished.failed()) {
-                    future.fail(finished.cause());
-                } else {
-                    future.complete(new File(downloadedFile));
-                }
-                handler.handle(future);
-            });
-        });
-    }
-
-    private void convertToAllResolution(File targetFile, String resolution, Handler<AsyncResult<Object>> handler) {
+    void convertToAllResolution(File targetFile, String resolution, Handler<AsyncResult<Object>> handler) {
         final int processors = Runtime.getRuntime().availableProcessors();
         vertx.executeBlocking(
                 convert(targetFile, resolution, processors),
