@@ -10,7 +10,6 @@ import io.vertx.core.file.OpenOptions;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
@@ -25,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class FileEncoder {
+    private static final String TEMP_DIR = System.getenv("java.io.tmpdir");
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
@@ -71,18 +71,9 @@ public class FileEncoder {
     }
 
     private void download(UUID key, Handler<AsyncResult<File>> handler) {
-        File downloadedFile;
+        String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
         Future<File> future = Future.future();
-        // TODO use vertx.fileSystem() to create temp file
-        try {
-            downloadedFile = Files.createTempFile("brownie-downloaded", ".video").toFile();
-        } catch (IOException e) {
-            future.fail(e);
-            handler.handle(future);
-            return;
-        }
-
-        vertx.fileSystem().open(downloadedFile.getAbsolutePath(), new OpenOptions().setWrite(true), result -> {
+        vertx.fileSystem().open(downloadedFile, new OpenOptions().setWrite(true), result -> {
             if (result.failed()) {
                 future.fail(result.cause());
                 handler.handle(future);
@@ -93,7 +84,7 @@ public class FileEncoder {
                 if (finished.failed()) {
                     future.fail(finished.cause());
                 } else {
-                    future.complete(downloadedFile);
+                    future.complete(new File(downloadedFile));
                 }
                 handler.handle(future);
             });
