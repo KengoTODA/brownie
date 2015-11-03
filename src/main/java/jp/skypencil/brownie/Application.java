@@ -27,6 +27,10 @@ public class Application {
     private Future<Vertx> vertxFuture;
 
     public static void main(String[] args) {
+        // specify logging framework
+        // http://vertx.io/docs/vertx-core/java/#_logging
+        System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.SLF4JLogDelegateFactory");
+
         SpringApplication.run(Application.class, args);
     }
 
