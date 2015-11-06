@@ -4,10 +4,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import io.netty.util.CharsetUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 
+@ParametersAreNonnullByDefault
 public class TaskCodec implements MessageCodec<Task, Task> {
 
     @Override

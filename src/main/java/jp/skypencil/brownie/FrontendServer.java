@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
@@ -51,8 +53,10 @@ public class FrontendServer {
      * via {@code BROWNIE_CLUSTER_HTTP_PORT} system property.
      */
     @Value("${BROWNIE_CLUSTER_HTTP_PORT:8080}")
+    @Nonnegative
     private int httpPort;
 
+    @Nonnull
     private String createDirectory() {
         try {
             Path directory = Files.createTempDirectory("brownie");

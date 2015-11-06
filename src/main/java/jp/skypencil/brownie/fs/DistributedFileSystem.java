@@ -8,9 +8,13 @@ import io.vertx.core.streams.WriteStream;
 
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 /**
  * Interface to handle files on distributed file system.
  */
+@ParametersAreNonnullByDefault
 public interface DistributedFileSystem {
     /**
      * Load a file from distributed file system. This operation fails if target file does not exist.
@@ -20,7 +24,7 @@ public interface DistributedFileSystem {
      * @param handler
      *      Handler to handle data as {@link Buffer}
      */
-    void load(UUID key, Handler<AsyncResult<Buffer>> handler);
+    void load(UUID key, @Nullable Handler<AsyncResult<Buffer>> handler);
 
     /**
      * Load a file from distributed file system, and pipe it to given {@link WriteStream}.
@@ -33,7 +37,7 @@ public interface DistributedFileSystem {
      * @param handler
      *      Callback function to handle result
      */
-    void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, Handler<AsyncResult<Void>> handler);
+    void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, @Nullable Handler<AsyncResult<Void>> handler);
 
     /**
      * Store a file to distributed file system. This operation fails if target file already exists.
@@ -45,7 +49,7 @@ public interface DistributedFileSystem {
      * @param handler
      *      Callback function to handle result
      */
-    void store(UUID key, Buffer buffer, Handler<AsyncResult<Void>> handler);
+    void store(UUID key, Buffer buffer, @Nullable Handler<AsyncResult<Void>> handler);
 
     /**
      * Store a file to distributed file system, from given {@link ReadStream}.
@@ -58,5 +62,5 @@ public interface DistributedFileSystem {
      * @param handler
      *      Callback function to handle result
      */
-    void pipeToStore(UUID key, ReadStream<Buffer> readStream, Handler<AsyncResult<Void>> handler);
+    void pipeToStore(UUID key, ReadStream<Buffer> readStream, @Nullable Handler<AsyncResult<Void>> handler);
 }

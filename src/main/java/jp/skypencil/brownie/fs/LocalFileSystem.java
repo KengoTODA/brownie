@@ -15,8 +15,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,20 +36,23 @@ public class LocalFileSystem implements DistributedFileSystem {
 
     @Override
     public void load(UUID key, Handler<AsyncResult<Buffer>> handler) {
-        String path = baseDir + "/" + key;
+        String path = baseDir + "/" + Objects.requireNonNull(key);
         vertx.fileSystem().readFile(path, handler);
     }
 
     @Override
     public void store(UUID key, Buffer buffer, Handler<AsyncResult<Void>> handler) {
-        String path = baseDir + "/" + key;
+        String path = baseDir + "/" + Objects.requireNonNull(key);
         vertx.fileSystem().writeFile(path, buffer, handler);
     }
 
     @Override
-    public void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, Handler<AsyncResult<Void>> handler) {
-        String path = baseDir + "/" + key;
+    public void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, Handler<AsyncResult<Void>> givenHandler) {
+        Objects.requireNonNull(writeStream);
+        String path = baseDir + "/" + Objects.requireNonNull(key);
         Future<Void> future = Future.future();
+        final Handler<AsyncResult<Void>> handler =
+                firstNonNull(givenHandler, result -> {});
         vertx.fileSystem().open(path, new OpenOptions().setRead(true), result -> {
             if (result.failed()) {
                 future.fail(result.cause());
@@ -71,9 +77,12 @@ public class LocalFileSystem implements DistributedFileSystem {
 
     @Override
     public void pipeToStore(UUID key, ReadStream<Buffer> readStream,
-            Handler<AsyncResult<Void>> handler) {
-        String path = baseDir + "/" + key;
+            Handler<AsyncResult<Void>> givenHandler) {
+        Objects.requireNonNull(readStream);
+        String path = baseDir + "/" + Objects.requireNonNull(key);
         Future<Void> future = Future.future();
+        final Handler<AsyncResult<Void>> handler =
+                firstNonNull(givenHandler, result -> {});
         vertx.fileSystem().open(path, new OpenOptions().setWrite(true), opened -> {
             if (opened.failed()) {
                 future.fail(opened.cause());
@@ -103,6 +112,15 @@ public class LocalFileSystem implements DistributedFileSystem {
             return directory.toFile().getAbsolutePath();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private <T> Handler<T> firstNonNull(@Nullable Handler<T> first,
+            @Nonnull Handler<T> second) {
+        if (first == null) {
+            return Objects.requireNonNull(second);
+        } else {
+            return first;
         }
     }
 }

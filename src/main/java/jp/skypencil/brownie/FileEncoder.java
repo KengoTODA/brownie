@@ -5,9 +5,12 @@ import io.vertx.core.Handler;
 
 import java.io.File;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 /**
  * Interface to encode video file.
  */
+@ParametersAreNonnullByDefault
 public interface FileEncoder {
     /**
      * 
