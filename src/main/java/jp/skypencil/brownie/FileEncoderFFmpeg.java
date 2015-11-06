@@ -7,7 +7,6 @@ import io.vertx.core.Vertx;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 import javax.annotation.Resource;
 
@@ -58,12 +57,12 @@ public class FileEncoderFFmpeg implements FileEncoder {
                 Process process = builder.start();
                 int statusCode;
                 if ((statusCode = process.waitFor()) != 0) {
-                    throw new IllegalStateException("FFmpeg failed with illegal status code: " + statusCode);
+                    future.fail("FFmpeg failed with illegal status code: " + statusCode);
+                    return;
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (InterruptedException e) {
-                throw new IllegalStateException(e);
+            } catch (IOException | InterruptedException e) {
+                future.fail(e);
+                return;
             }
             future.complete(new File(resultFileName));
         };
