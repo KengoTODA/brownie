@@ -22,7 +22,7 @@ public class BackendServer {
     private FileEncoder fileEncoder;
 
     @Resource
-    private FileDownloader fileDownloader;
+    private FileTransporter fileDownloader;
 
     @PostConstruct
     void registerEventListeners() {

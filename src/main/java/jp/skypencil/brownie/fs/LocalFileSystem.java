@@ -8,6 +8,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.AsyncFile;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.streams.Pump;
+import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 
 import java.io.IOException;
@@ -52,6 +53,33 @@ public class LocalFileSystem implements DistributedFileSystem {
                 handler.handle(future);
             } else {
                 AsyncFile readStream = result.result();
+                writeStream.exceptionHandler(throwable -> {
+                    future.fail(throwable);
+                    handler.handle(future);
+                });
+                readStream.exceptionHandler(throwable -> {
+                    future.fail(throwable);
+                    handler.handle(future);
+                }).endHandler(end -> {
+                    future.complete();
+                    handler.handle(future);
+                });
+                Pump.pump(readStream, writeStream).start();
+            }
+        });
+    }
+
+    @Override
+    public void pipeToStore(UUID key, ReadStream<Buffer> readStream,
+            Handler<AsyncResult<Void>> handler) {
+        String path = baseDir + "/" + key;
+        Future<Void> future = Future.future();
+        vertx.fileSystem().open(path, new OpenOptions().setWrite(true), opened -> {
+            if (opened.failed()) {
+                future.fail(opened.cause());
+                handler.handle(future);
+            } else {
+                AsyncFile writeStream = opened.result();
                 writeStream.exceptionHandler(throwable -> {
                     future.fail(throwable);
                     handler.handle(future);
