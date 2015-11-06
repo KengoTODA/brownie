@@ -7,7 +7,9 @@ import io.vertx.core.Vertx;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
 import jp.skypencil.brownie.fs.DistributedFileSystem;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Component;
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
 @Component
+@ParametersAreNonnullByDefault
 public class FileEncoderFFmpeg implements FileEncoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -32,6 +35,9 @@ public class FileEncoderFFmpeg implements FileEncoder {
 
     @Override
     public void convert(File targetFile, String resolution, Handler<AsyncResult<File>> handler) {
+        Objects.requireNonNull(targetFile);
+        Objects.requireNonNull(resolution);
+        Objects.requireNonNull(handler);
         final int processors = Runtime.getRuntime().availableProcessors();
         vertx.executeBlocking(
                 convert(targetFile, resolution, processors),

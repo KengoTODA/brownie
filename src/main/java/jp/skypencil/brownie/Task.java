@@ -1,15 +1,23 @@
 package jp.skypencil.brownie;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 import lombok.Value;
 
 @Value
+@ParametersAreNonnullByDefault
 public final class Task {
+    @Nonnull
     private final UUID key;
+    @Nonnull
     private final String uploadedFileName;
+    @Nonnull
     private final Set<String> resolutions;
 
     Task(String uploadedFileName, Set<String> resolutions) {
@@ -17,11 +25,12 @@ public final class Task {
     }
 
     Task(UUID key, String uploadedFileName, Set<String> resolutions) {
-        this.key = key;
-        this.uploadedFileName = uploadedFileName;
-        this.resolutions = new HashSet<>(resolutions);
+        this.key = Objects.requireNonNull(key);
+        this.uploadedFileName = Objects.requireNonNull(uploadedFileName);
+        this.resolutions = new HashSet<>(Objects.requireNonNull(resolutions));
     }
 
+    @Nonnull
     private static UUID generateUuidV1() {
         return UUID.fromString(new com.eaio.uuid.UUID().toString());
     }

@@ -9,6 +9,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.file.OpenOptions;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
 import jp.skypencil.brownie.fs.DistributedFileSystem;
@@ -16,6 +17,7 @@ import jp.skypencil.brownie.fs.DistributedFileSystem;
 import org.springframework.stereotype.Component;
 
 @Component
+@ParametersAreNonnullByDefault
 public class FileTransporter {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
