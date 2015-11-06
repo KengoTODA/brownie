@@ -16,7 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-
+/**
+ * An {@link FileEncoder} implementation which depends on FFmpeg.
+ * It needs {@code ffmpeg} executable in the {@code PATH}.
+ */
 @Component
 public class FileEncoderFFmpeg implements FileEncoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
