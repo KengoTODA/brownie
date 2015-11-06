@@ -17,10 +17,17 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * An entry point to launch brownie server. To execute this class, simply run {@code java -jar}.
+ */
 @SpringBootApplication
 public class Application {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * Host name to connect. To enable cluster mode, user should specify this value by
+     * {@code BROWNIE_CLUSTER_HOST} system property.
+     */
     @Value("${BROWNIE_CLUSTER_HOST:}")
     private String clusterHost;
 
@@ -34,10 +41,16 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 
+    /**
+     * Initialize fields in this class.
+     * 
+     * This method kicks {@link Vertx#clusteredVertx(VertxOptions, io.vertx.core.Handler)} method,
+     * to create a clustered instance asynchronously.
+     */
     @PostConstruct
     public void prepareCluster() {
         if (clusterHost.isEmpty()) {
-            logger.info("STANDALONE mode: environment variable BROWNIE_CLUSTER_HOST not found");
+            logger.info("STANDALONE mode: system property BROWNIE_CLUSTER_HOST not found");
             Vertx vertx = Vertx.vertx();
             vertxFuture = Future.succeededFuture(vertx);
             return;
@@ -59,6 +72,11 @@ public class Application {
         });
     }
 
+    /**
+     * Generate {@link Vertx} instance, based on given condition via system property.
+     * 
+     * @return {@link Vertx} instance to use in this application
+     */
     @Bean
     public Vertx vertx() throws InterruptedException {
         while (!vertxFuture.isComplete()) {

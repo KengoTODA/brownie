@@ -22,7 +22,7 @@ public class BackendServer {
     private FileEncoder fileEncoder;
 
     @Resource
-    private FileDownloader fileDownloader;
+    private FileTransporter fileDownloader;
 
     @PostConstruct
     void registerEventListeners() {
@@ -39,7 +39,7 @@ public class BackendServer {
                         task.getKey(),
                         downloadedFile);
                 for (String resolution : task.getResolutions()) {
-                    fileEncoder.convertToAllResolution(downloadedFile, resolution, converted -> {
+                    fileEncoder.convert(downloadedFile, resolution, converted -> {
                         if (converted.failed()) {
                             log.error("Failed to convert file (key: {}, resolution: {})",
                                     task.getKey(),

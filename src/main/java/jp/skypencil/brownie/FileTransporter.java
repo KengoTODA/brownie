@@ -16,7 +16,7 @@ import jp.skypencil.brownie.fs.DistributedFileSystem;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FileDownloader {
+public class FileTransporter {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
     @Resource
@@ -29,18 +29,40 @@ public class FileDownloader {
         String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
         Future<File> future = Future.future();
         vertx.fileSystem().open(downloadedFile,
-                new OpenOptions().setWrite(true), result -> {
-                    if (result.failed()) {
-                        future.fail(result.cause());
+                new OpenOptions().setWrite(true),
+                opened -> {
+                    if (opened.failed()) {
+                        future.fail(opened.cause());
                         handler.handle(future);
                         return;
                     }
 
-                    fileSystem.loadAndPipe(key, result.result(), finished -> {
+                    fileSystem.loadAndPipe(key, opened.result(), finished -> {
                         if (finished.failed()) {
                             future.fail(finished.cause());
                         } else {
                             future.complete(new File(downloadedFile));
+                        }
+                        handler.handle(future);
+                    });
+                });
+    }
+
+    void upload(UUID key, File file, Handler<AsyncResult<Void>> handler) {
+        Future<Void> future = Future.future();
+        vertx.fileSystem().open(file.getAbsolutePath(),
+                new OpenOptions().setRead(true),
+                opened -> {
+                    if (opened.failed()) {
+                        future.fail(opened.cause());
+                        handler.handle(future);
+                        return;
+                    }
+                    fileSystem.pipeToStore(key, opened.result(), stored -> {
+                        if (stored.failed()) {
+                            future.fail(stored.cause());
+                        } else {
+                            future.complete();
                         }
                         handler.handle(future);
                     });

@@ -2,6 +2,7 @@ package jp.skypencil.brownie;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -22,9 +23,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * <p>A server class for front-end features, including:</p>
+ * <ul>
+ *  <li>Form to upload video</li>
+ *  <li>REST API</li>
+ *  <li>Admin console</li>
+ * </ul>
+ *
+ * <p>This class is responsible to map URL to related operations.</p>
+ */
 @Component
-public class Server {
+public class FrontendServer {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    /**
+     * Directory to store uploaded file.
+     */
     private final String directory = createDirectory();
     @Resource
     private Vertx vertx;
@@ -32,6 +46,10 @@ public class Server {
     @Resource
     private DistributedFileSystem fileSystem;
 
+    /**
+     * TCP port number to connect. It is {@code 8080} by default, and configurable
+     * via {@code BROWNIE_CLUSTER_HTTP_PORT} system property.
+     */
     @Value("${BROWNIE_CLUSTER_HTTP_PORT:8080}")
     private int httpPort;
 
@@ -45,6 +63,9 @@ public class Server {
         }
     }
 
+    /**
+     * Create {@link HttpServer} to listen specified {@link #httpPort}.
+     */
     @PostConstruct
     public void createServer(){
         Router router = Router.router(vertx);
