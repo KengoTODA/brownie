@@ -42,6 +42,11 @@
       <version>3.4</version>
     </dependency>
     <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>${findbugs.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>1.16.6</version>
@@ -66,7 +71,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>3.0.1</version>
+        <version>${findbugs.version}</version>
         <configuration>
           <plugins>
             <plugin>
@@ -82,6 +87,7 @@
   <properties>
     <java.version>1.8</java.version>
     <vertx.version>3.1.0</vertx.version>
+    <findbugs.version>3.0.1</findbugs.version>
   </properties>
   <scm>
     <connection>scm:git:git@github.com:KengoTODA/brownie.git</connection>
