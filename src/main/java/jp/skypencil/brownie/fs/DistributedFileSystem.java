@@ -12,8 +12,51 @@ import java.util.UUID;
  * Interface to handle files on distributed file system.
  */
 public interface DistributedFileSystem {
+    /**
+     * Load a file from distributed file system. This operation fails if target file does not exist.
+     *
+     * @param key
+     *      Key of file to load
+     * @param handler
+     *      Handler to handle data as {@link Buffer}
+     */
     void load(UUID key, Handler<AsyncResult<Buffer>> handler);
+
+    /**
+     * Load a file from distributed file system, and pipe it to given {@link WriteStream}.
+     * This operation fails if target file does not exist.
+     *
+     * @param key
+     *      Key of file to load
+     * @param writeStream
+     *      Target {@link WriteStream} to pipe loaded data
+     * @param handler
+     *      Callback function to handle result
+     */
     void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, Handler<AsyncResult<Void>> handler);
+
+    /**
+     * Store a file to distributed file system. This operation fails if target file already exists.
+     *
+     * @param key
+     *      Key of file on distributed file system to store
+     * @param buffer
+     *      Target {@link Buffer} to store
+     * @param handler
+     *      Callback function to handle result
+     */
     void store(UUID key, Buffer buffer, Handler<AsyncResult<Void>> handler);
+
+    /**
+     * Store a file to distributed file system, from given {@link ReadStream}.
+     * This operation fails if target file already exists.
+     *
+     * @param key
+     *      Key of file on distributed file system to store
+     * @param readStream
+     *      Source {@link ReadStream} to pipe
+     * @param handler
+     *      Callback function to handle result
+     */
     void pipeToStore(UUID key, ReadStream<Buffer> readStream, Handler<AsyncResult<Void>> handler);
 }
