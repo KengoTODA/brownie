@@ -25,4 +25,35 @@ function setupForm() {
   var $result = $form.find('#result');
   var action = $form.attr('action');
 }
+function loadTasks() {
+  'use strict';
+  var $row = $('#tasks');
+  var $tasks = $row.find('tbody');
+  $.ajax('tasks/', {
+    type: 'get'
+  })
+  .done(function(data) {
+    'use strict';
+    function displayTable() {
+        var flagment = document.createDocumentFragment();
+        $.each(data, function(i, task) {
+          'use strict';
+          var $tr = $('<tr>').data('key', task['key']).append(
+            $('<td>').text(task['fileName'])
+          ).append(
+            $('<td>').text(new Date(task['registered']))
+          );
+          flagment.appendChild($tr[0]);
+        });
+        $tasks[0].appendChild(flagment);
+        $tasks.closest('table').show();
+    }
+    if (data.length === 0) {
+      $row.find('p').show();
+    } else {
+      displayTable();
+    }
+  });
+}
 setupForm();
+loadTasks();

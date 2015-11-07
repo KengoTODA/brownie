@@ -95,7 +95,7 @@ public class FrontendServer {
             }
             AtomicInteger countDown = new AtomicInteger(uploadedFiles.size());
             uploadedFiles.forEach(fileUpload -> {
-                Task task = new Task(fileUpload.uploadedFileName(), Collections.singleton("vga"));
+                Task task = new Task(fileUpload.fileName(), Collections.singleton("vga"));
                 vertx.fileSystem().readFile(fileUpload.uploadedFileName(), read -> {
                     if (read.failed()) {
                         logger.warn("Failed to load file from file system", read.cause());
@@ -129,7 +129,17 @@ public class FrontendServer {
                 });
             });
         });
-        router.route("/tasks").handler(ctx -> {
+        router.mountSubRouter("/tasks", createRouterForTaskApi());
+        // Serve the static pages
+        router.route().handler(StaticHandler.create());
+
+        vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
+        logger.info("HTTP server is listening {} port", httpPort);
+    }
+
+    private Router createRouterForTaskApi() {
+        Router subRouter = Router.router(vertx);
+        subRouter.route().handler(ctx -> {
             HttpServerResponse response = ctx.response()
                 .setChunked(true)
                 .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
@@ -152,12 +162,6 @@ public class FrontendServer {
                 });
             });
         });
-
-        // TODO generate task list
-        // Serve the static pages
-        router.route().handler(StaticHandler.create());
-
-        vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
-        logger.info("HTTP server is listening {} port", httpPort);
+        return subRouter;
     }
 }
