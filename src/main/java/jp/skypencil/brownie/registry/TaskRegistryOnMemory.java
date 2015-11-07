@@ -58,6 +58,7 @@ class TaskRegistryOnMemory implements TaskRegistry {
         handler.handle(future);
     }
 
+    @Nonnull
     private <T> Handler<T> firstNonNull(@Nullable Handler<T> first,
             @Nonnull Handler<T> second) {
         if (first == null) {
@@ -68,15 +69,18 @@ class TaskRegistryOnMemory implements TaskRegistry {
     }
 
     @RequiredArgsConstructor
-    private class TaskReadStream implements ReadStream<Task> {
+    private static class TaskReadStream implements ReadStream<Task> {
+        @Nonnull
         private final Iterator<Task> source;
+        @Nullable
         private Handler<Task> handler;
         private boolean paused;
+        @Nullable
         private Handler<Void> endHandler;
 
         @Override
         public ReadStream<Task> exceptionHandler(Handler<Throwable> handler) {
-            return this;
+            throw new UnsupportedOperationException();
         }
 
         @Override
