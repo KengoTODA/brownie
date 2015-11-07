@@ -3,6 +3,9 @@ package jp.skypencil.brownie;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -12,6 +15,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -19,6 +24,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import jp.skypencil.brownie.fs.DistributedFileSystem;
+import jp.skypencil.brownie.registry.TaskRegistry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +54,9 @@ public class FrontendServer {
     @Resource
     private DistributedFileSystem fileSystem;
 
+    @Resource
+    private TaskRegistry taskRegistry;
+
     /**
      * TCP port number to connect. It is {@code 8080} by default, and configurable
      * via {@code BROWNIE_CLUSTER_HTTP_PORT} system property.
@@ -74,30 +83,80 @@ public class FrontendServer {
     public void createServer(){
         Router router = Router.router(vertx);
 
-        // Serve the static pages
-        router.route().handler(StaticHandler.create());
-
         // Serve the form handling part
         router.route("/form").handler(BodyHandler.create().setUploadsDirectory(directory));
         router.post("/form").handler(ctx -> {
-            ctx.fileUploads().forEach(fileUpload -> {
+            HttpServerResponse response = ctx.response()
+                    .putHeader(HttpHeaders.CONTENT_TYPE, "text/plain");
+            Set<FileUpload> uploadedFiles = ctx.fileUploads();
+            if (uploadedFiles.isEmpty()) {
+                response.end("No file uploaded");
+                return;
+            }
+            AtomicInteger countDown = new AtomicInteger(uploadedFiles.size());
+            uploadedFiles.forEach(fileUpload -> {
                 Task task = new Task(fileUpload.uploadedFileName(), Collections.singleton("vga"));
                 vertx.fileSystem().readFile(fileUpload.uploadedFileName(), read -> {
                     if (read.failed()) {
-                        throw new RuntimeException("Failed to load file from file system", read.cause());
+                        logger.warn("Failed to load file from file system", read.cause());
+                        response
+                            .setStatusCode(500)
+                            .end("Internal server error");
+                        return;
                     }
                     fileSystem.store(task.getKey(), read.result(), stored -> {
                         if (stored.failed()) {
-                            throw new RuntimeException("Failed to store file onto file system", stored.cause());
+                            logger.warn("Failed to store file onto file system", stored.cause());
+                            response
+                                .setStatusCode(500)
+                                .end("Internal server error");
+                            return;
                         }
-                        vertx.eventBus().send("file-uploaded", task);
+                        taskRegistry.store(task, taskStored -> {
+                            if (taskStored.failed()) {
+                                logger.warn("Failed to store task to registry", stored.cause());
+                                response
+                                    .setStatusCode(500)
+                                    .end("Internal server error");
+                                return;
+                            }
+                            vertx.eventBus().send("file-uploaded", task);
+                            if (countDown.decrementAndGet() == 0) {
+                                response.end("registered");
+                            }
+                        });
                     });
                 });
             });
-            ctx.response()
-                .putHeader(HttpHeaders.CONTENT_TYPE, "text/plain")
-                .end("registered");
         });
+        router.route("/tasks").handler(ctx -> {
+            HttpServerResponse response = ctx.response()
+                .setChunked(true)
+                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            StringBuilder responseBody = new StringBuilder("[");
+            taskRegistry.iterate(loaded -> {
+                if (loaded.failed()) {
+                    response
+                        .setStatusCode(500)
+                        .end("Failed to load tasks");
+                    return;
+                }
+                ReadStream<Task> stream = loaded.result();
+                stream.endHandler(ended -> {
+                    response.end(responseBody.append("]").toString());
+                }).handler(task -> {
+                    if (responseBody.length() != 1) {
+                        responseBody.append(",");
+                    }
+                    responseBody.append(task.toJson());
+                });
+            });
+        });
+
+        // TODO generate task list
+        // Serve the static pages
+        router.route().handler(StaticHandler.create());
+
         vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
         logger.info("HTTP server is listening {} port", httpPort);
     }

@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -33,5 +34,14 @@ public final class Task {
     @Nonnull
     private static UUID generateUuidV1() {
         return UUID.fromString(new com.eaio.uuid.UUID().toString());
+    }
+
+    String toJson() {
+        return String.format("{\"key\":\"%s\",\"fileName\":\"%s\",\"resolutions\":[%s]}",
+                key,
+                uploadedFileName,
+                resolutions.stream()
+                    .map(resolution -> "\"" + resolution + "\"")
+                    .collect(Collectors.joining(",")));
     }
 }
