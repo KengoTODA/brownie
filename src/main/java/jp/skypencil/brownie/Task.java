@@ -1,5 +1,6 @@
 package jp.skypencil.brownie;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -20,15 +21,22 @@ public final class Task {
     private final String uploadedFileName;
     @Nonnull
     private final Set<String> resolutions;
+    @Nonnull
+    private final Instant registered;
 
     Task(String uploadedFileName, Set<String> resolutions) {
         this(generateUuidV1(), uploadedFileName, resolutions);
     }
 
     Task(UUID key, String uploadedFileName, Set<String> resolutions) {
+        this(key, uploadedFileName, resolutions, Instant.now());
+    }
+
+    Task(UUID key, String uploadedFileName, Set<String> resolutions, Instant registered) {
         this.key = Objects.requireNonNull(key);
         this.uploadedFileName = Objects.requireNonNull(uploadedFileName);
         this.resolutions = new HashSet<>(Objects.requireNonNull(resolutions));
+        this.registered = registered;
     }
 
     @Nonnull
@@ -37,11 +45,12 @@ public final class Task {
     }
 
     String toJson() {
-        return String.format("{\"key\":\"%s\",\"fileName\":\"%s\",\"resolutions\":[%s]}",
+        return String.format("{\"key\":\"%s\",\"fileName\":\"%s\",\"resolutions\":[%s],\"registered\":%d}",
                 key,
                 uploadedFileName,
                 resolutions.stream()
                     .map(resolution -> "\"" + resolution + "\"")
-                    .collect(Collectors.joining(",")));
+                    .collect(Collectors.joining(",")),
+                registered.toEpochMilli());
     }
 }

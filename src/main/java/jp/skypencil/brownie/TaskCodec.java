@@ -1,5 +1,6 @@
 package jp.skypencil.brownie;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class TaskCodec implements MessageCodec<Task, Task> {
             .forEach(bytes -> {
                 buffer.appendInt(bytes.length).appendBytes(bytes);
             });
+        buffer.appendLong(s.getRegistered().toEpochMilli());
     }
 
     @Override
@@ -50,7 +52,9 @@ public class TaskCodec implements MessageCodec<Task, Task> {
             resolutions.add(new String(buffer.getBytes(pos, pos + resolutionLength), CharsetUtil.UTF_8));
             pos += resolutionLength;
         }
-        return new Task(key, fileName, resolutions);
+        long epochMilli = buffer.getLong(pos);
+        pos += 8;
+        return new Task(key, fileName, resolutions, Instant.ofEpochMilli(epochMilli));
     }
 
     @Override
