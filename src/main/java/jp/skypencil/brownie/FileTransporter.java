@@ -1,15 +1,18 @@
 package jp.skypencil.brownie;
 
-import java.io.File;
-import java.time.Instant;
-import java.util.UUID;
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.OpenOptions;
+import io.vertx.core.streams.WriteStream;
 
+import java.io.File;
+import java.time.Instant;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
@@ -83,5 +86,9 @@ public class FileTransporter {
                         });
                     });
                 });
+    }
+
+    void downloadToPipe(UUID key, WriteStream<Buffer> buffer, @Nullable Handler<AsyncResult<Void>> handler) {
+        fileSystem.loadAndPipe(key, buffer, handler);
     }
 }

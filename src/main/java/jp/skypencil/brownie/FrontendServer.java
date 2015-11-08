@@ -7,6 +7,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
@@ -16,7 +17,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnegative;
@@ -33,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
+
 
 
 /**
@@ -171,32 +175,62 @@ public class FrontendServer {
 
     private Router createRouterForFileApi() {
         Router subRouter = Router.router(vertx);
-        subRouter.get("/").handler(ctx -> {
-            HttpServerResponse response = ctx.response()
-                .setChunked(true)
-                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            StringBuilder responseBody = new StringBuilder("[");
-            fileMetadataRegistry.iterate(loaded -> {
-                if (loaded.failed()) {
-                    response
-                        .setStatusCode(500)
-                        .end("Failed to load files");
-                    return;
-                }
-                FileMetadataReadStream stream = loaded.result();
-                stream.endHandler(ended -> {
-                    stream.close();
-                    response.end(responseBody.append("]").toString());
-                }).exceptionHandler(throwable -> {
-                    stream.close();
-                }).handler(metadata -> {
-                    if (responseBody.length() != 1) {
-                        responseBody.append(",");
-                    }
-                    responseBody.append(metadata.toJson());
-                });
-            });
+        subRouter.get("/").handler(this::generateFileList);
+        subRouter.get("/:fileId").handler(ctx -> {
+            String fileId = ctx.request().getParam("fileId");
+            downloadFile(ctx, fileId);
         });
         return subRouter;
+    }
+
+    private void downloadFile(RoutingContext ctx, String fileId) {
+        UUID key = UUID.fromString(fileId);
+        HttpServerResponse response = ctx.response();
+        fileMetadataRegistry.load(key, loaded -> {
+            if (loaded.succeeded()) {
+                Optional<FileMetadata> metadata = loaded.result();
+                if (metadata.isPresent()) {
+                    long contentLength = metadata.get().getContentLength();
+                    response.putHeader("Content-Length", Long.toString(contentLength));
+                    fileTransporter.downloadToPipe(key, response, downloaded -> {
+                        if (downloaded.failed()) {
+                            logger.error("Failed to download file", downloaded.cause());
+                            response.setStatusCode(500).end("Failed to load file");
+                            return;
+                        }
+                        response.end();
+                    });
+                    return;
+                }
+            }
+            response.setStatusCode(500).end("Failed to load file");
+        });
+    }
+
+    private void generateFileList(RoutingContext ctx) {
+        HttpServerResponse response = ctx.response()
+            .setChunked(true)
+            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        StringBuilder responseBody = new StringBuilder("[");
+        fileMetadataRegistry.iterate(loaded -> {
+            if (loaded.failed()) {
+                response
+                    .setStatusCode(500)
+                    .end("Failed to load files");
+                return;
+            }
+            FileMetadataReadStream stream = loaded.result();
+            stream.endHandler(ended -> {
+                stream.close();
+                response.end(responseBody.append("]").toString());
+            }).exceptionHandler(throwable -> {
+                stream.close();
+            }).handler(metadata -> {
+                if (responseBody.length() != 1) {
+                    responseBody.append(",");
+                }
+                responseBody.append(metadata.toJson());
+            });
+        });
     }
 }

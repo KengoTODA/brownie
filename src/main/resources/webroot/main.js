@@ -76,8 +76,11 @@ function loadFiles() {
         var flagment = document.createDocumentFragment();
         $.each(data, function(i, file) {
           'use strict';
-          var $tr = $('<tr>').data('key', file['fileId']).append(
-            $('<td>').text(file['fileName'])
+          var fileId = file['fileId'];
+          var $tr = $('<tr>').data('key', fileId).append(
+            $('<td>').append(
+              $('<a>').text(file['fileName']).attr('href', 'files/' + fileId)
+            )
           ).append(
             $('<td>').text(numberWithCommas(file['contentLength']) + ' bytes').css('text-align', 'right')
           ).append(
