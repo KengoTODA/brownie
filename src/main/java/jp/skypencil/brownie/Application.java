@@ -9,6 +9,7 @@ import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,8 @@ public class Application {
 
     private Future<Vertx> vertxFuture;
 
+    private Vertx vertx;
+
     public static void main(String[] args) {
         // specify logging framework
         // http://vertx.io/docs/vertx-core/java/#_logging
@@ -51,7 +54,7 @@ public class Application {
     public void prepareCluster() {
         if (clusterHost.isEmpty()) {
             logger.info("STANDALONE mode: system property BROWNIE_CLUSTER_HOST not found");
-            Vertx vertx = Vertx.vertx();
+            vertx = Vertx.vertx();
             vertxFuture = Future.succeededFuture(vertx);
             return;
         }
@@ -72,6 +75,13 @@ public class Application {
         });
     }
 
+    @PreDestroy
+    public void cleanUp() {
+        if (vertx != null) {
+            vertx.close();
+        }
+    }
+
     /**
      * Generate {@link Vertx} instance, based on given condition via system property.
      * 
@@ -85,7 +95,7 @@ public class Application {
         if (vertxFuture.failed()) {
             throw new IllegalStateException("Failed to connect to cluster", vertxFuture.cause());
         }
-        Vertx vertx = vertxFuture.result();
+        vertx = vertxFuture.result();
         vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
         return vertx;
     }
