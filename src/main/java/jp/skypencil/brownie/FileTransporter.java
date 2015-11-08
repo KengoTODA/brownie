@@ -1,6 +1,7 @@
 package jp.skypencil.brownie;
 
 import java.io.File;
+import java.time.Instant;
 import java.util.UUID;
 
 import io.vertx.core.AsyncResult;
@@ -13,8 +14,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
 import jp.skypencil.brownie.fs.DistributedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeType;
 
 @Component
 @ParametersAreNonnullByDefault
@@ -26,6 +29,9 @@ public class FileTransporter {
 
     @Resource
     private DistributedFileSystem fileSystem;
+
+    @Resource
+    private FileMetadataRegistry fileMetadataRegistry;
 
     void download(UUID key, Handler<AsyncResult<File>> handler) {
         String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
@@ -50,7 +56,7 @@ public class FileTransporter {
                 });
     }
 
-    void upload(UUID key, File file, Handler<AsyncResult<Void>> handler) {
+    void upload(UUID key, String name, File file, MimeType mimeType, Handler<AsyncResult<Void>> handler) {
         Future<Void> future = Future.future();
         vertx.fileSystem().open(file.getAbsolutePath(),
                 new OpenOptions().setRead(true),
@@ -63,10 +69,18 @@ public class FileTransporter {
                     fileSystem.pipeToStore(key, opened.result(), stored -> {
                         if (stored.failed()) {
                             future.fail(stored.cause());
-                        } else {
-                            future.complete();
+                            handler.handle(future);
+                            return;
                         }
-                        handler.handle(future);
+                        FileMetadata metadata = new FileMetadata(key, name, mimeType, file.length(), Instant.now());
+                        fileMetadataRegistry.store(metadata, metadataStored -> {
+                            if (metadataStored.failed()) {
+                                future.fail(metadataStored.cause());
+                            } else {
+                                future.complete();
+                            }
+                            handler.handle(future);
+                        });
                     });
                 });
     }
