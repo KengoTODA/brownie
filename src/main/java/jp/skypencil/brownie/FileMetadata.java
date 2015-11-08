@@ -8,9 +8,9 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
-import org.springframework.util.MimeType;
-
 import lombok.Value;
+
+import org.springframework.util.MimeType;
 
 @ThreadSafe
 @Value
@@ -28,4 +28,9 @@ public class FileMetadata implements Serializable {
     long contentLength;
     @Nonnull
     Instant generated;
+
+    public String toJson() {
+        return String.format("{\"fileId\":\"%s\",\"fileName\":\"%s\",\"mimeType\":\"%s\",\"contentLength\":%d,\"generated\":%d}",
+                fileId, name, mimeType, contentLength, generated.toEpochMilli());
+    }
 }

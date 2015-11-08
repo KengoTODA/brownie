@@ -14,11 +14,14 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
+import org.springframework.stereotype.Component;
+
 import jp.skypencil.brownie.FileMetadata;
 
 /**
  * An implementation of {@link FileMetadataRegistry}, which stores data on memory.
  */
+@Component
 public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
     private final ConcurrentMap<UUID, FileMetadata> data = new ConcurrentHashMap<>();
 
@@ -76,6 +79,8 @@ public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
         private Handler<FileMetadata> handler;
         @Nullable
         private Handler<Void> endHandler;
+        @Nullable
+        private Handler<Throwable> exceptionHandler;
 
         private FileMetadataReadStreamImpl(Iterator<FileMetadata> source) {
             this.source = Objects.requireNonNull(source);
@@ -84,7 +89,8 @@ public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
         @Override
         public ReadStream<FileMetadata> exceptionHandler(
                 Handler<Throwable> handler) {
-            throw new UnsupportedOperationException();
+            this.exceptionHandler = handler;
+            return this;
         }
 
         @Override
@@ -114,7 +120,7 @@ public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             // do nothing
         }
 

@@ -24,10 +24,6 @@ public final class Task {
     @Nonnull
     private final Instant registered;
 
-    Task(String uploadedFileName, Set<String> resolutions) {
-        this(generateUuidV1(), uploadedFileName, resolutions);
-    }
-
     Task(UUID key, String uploadedFileName, Set<String> resolutions) {
         this(key, uploadedFileName, resolutions, Instant.now());
     }
@@ -37,11 +33,6 @@ public final class Task {
         this.uploadedFileName = Objects.requireNonNull(uploadedFileName);
         this.resolutions = new HashSet<>(Objects.requireNonNull(resolutions));
         this.registered = registered;
-    }
-
-    @Nonnull
-    private static UUID generateUuidV1() {
-        return UUID.fromString(new com.eaio.uuid.UUID().toString());
     }
 
     String toJson() {

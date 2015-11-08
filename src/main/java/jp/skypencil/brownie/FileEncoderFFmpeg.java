@@ -12,8 +12,6 @@ import java.util.Objects;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
-import jp.skypencil.brownie.fs.DistributedFileSystem;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,9 +27,6 @@ public class FileEncoderFFmpeg implements FileEncoder {
 
     @Resource
     private Vertx vertx;
-
-    @Resource
-    private DistributedFileSystem fileSystem;
 
     @Override
     public void convert(File targetFile, String resolution, Handler<AsyncResult<File>> handler) {

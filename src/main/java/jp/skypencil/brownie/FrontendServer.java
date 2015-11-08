@@ -10,6 +10,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -23,13 +24,16 @@ import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
-import jp.skypencil.brownie.fs.DistributedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataReadStream;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.TaskRegistry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeType;
+
 
 /**
  * <p>A server class for front-end features, including:</p>
@@ -52,10 +56,16 @@ public class FrontendServer {
     private Vertx vertx;
 
     @Resource
-    private DistributedFileSystem fileSystem;
+    private FileTransporter fileTransporter;
 
     @Resource
     private TaskRegistry taskRegistry;
+
+    @Resource
+    private FileMetadataRegistry fileMetadataRegistry;
+
+    @Resource
+    private KeyGenerator keyGenerator;
 
     /**
      * TCP port number to connect. It is {@code 8080} by default, and configurable
@@ -95,41 +105,35 @@ public class FrontendServer {
             }
             AtomicInteger countDown = new AtomicInteger(uploadedFiles.size());
             uploadedFiles.forEach(fileUpload -> {
-                Task task = new Task(fileUpload.fileName(), Collections.singleton("vga"));
-                vertx.fileSystem().readFile(fileUpload.uploadedFileName(), read -> {
-                    if (read.failed()) {
-                        logger.warn("Failed to load file from file system", read.cause());
+                Task task = new Task(keyGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
+                File file = new File(fileUpload.uploadedFileName());
+                MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
+                fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType, stored -> {
+                    if (stored.failed()) {
+                        logger.warn("Failed to store file onto file system", stored.cause());
                         response
                             .setStatusCode(500)
                             .end("Internal server error");
                         return;
                     }
-                    fileSystem.store(task.getKey(), read.result(), stored -> {
-                        if (stored.failed()) {
-                            logger.warn("Failed to store file onto file system", stored.cause());
+                    taskRegistry.store(task, taskStored -> {
+                        if (taskStored.failed()) {
+                            logger.warn("Failed to store task to registry", stored.cause());
                             response
                                 .setStatusCode(500)
                                 .end("Internal server error");
                             return;
                         }
-                        taskRegistry.store(task, taskStored -> {
-                            if (taskStored.failed()) {
-                                logger.warn("Failed to store task to registry", stored.cause());
-                                response
-                                    .setStatusCode(500)
-                                    .end("Internal server error");
-                                return;
-                            }
-                            vertx.eventBus().send("file-uploaded", task);
-                            if (countDown.decrementAndGet() == 0) {
-                                response.end("registered");
-                            }
-                        });
+                        vertx.eventBus().send("file-uploaded", task);
+                        if (countDown.decrementAndGet() == 0) {
+                            response.end("registered");
+                        }
                     });
                 });
             });
         });
         router.mountSubRouter("/tasks", createRouterForTaskApi());
+        router.mountSubRouter("/files", createRouterForFileApi());
         // Serve the static pages
         router.route().handler(StaticHandler.create());
 
@@ -141,24 +145,55 @@ public class FrontendServer {
         Router subRouter = Router.router(vertx);
         subRouter.route().handler(ctx -> {
             HttpServerResponse response = ctx.response()
+                    .setChunked(true)
+                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+                StringBuilder responseBody = new StringBuilder("[");
+                taskRegistry.iterate(loaded -> {
+                    if (loaded.failed()) {
+                        response
+                            .setStatusCode(500)
+                            .end("Failed to load tasks");
+                        return;
+                    }
+                    ReadStream<Task> stream = loaded.result();
+                    stream.endHandler(ended -> {
+                        response.end(responseBody.append("]").toString());
+                    }).handler(task -> {
+                        if (responseBody.length() != 1) {
+                            responseBody.append(",");
+                        }
+                        responseBody.append(task.toJson());
+                    });
+                });
+        });
+        return subRouter;
+    }
+
+    private Router createRouterForFileApi() {
+        Router subRouter = Router.router(vertx);
+        subRouter.get("/").handler(ctx -> {
+            HttpServerResponse response = ctx.response()
                 .setChunked(true)
                 .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
             StringBuilder responseBody = new StringBuilder("[");
-            taskRegistry.iterate(loaded -> {
+            fileMetadataRegistry.iterate(loaded -> {
                 if (loaded.failed()) {
                     response
                         .setStatusCode(500)
-                        .end("Failed to load tasks");
+                        .end("Failed to load files");
                     return;
                 }
-                ReadStream<Task> stream = loaded.result();
+                FileMetadataReadStream stream = loaded.result();
                 stream.endHandler(ended -> {
+                    stream.close();
                     response.end(responseBody.append("]").toString());
-                }).handler(task -> {
+                }).exceptionHandler(throwable -> {
+                    stream.close();
+                }).handler(metadata -> {
                     if (responseBody.length() != 1) {
                         responseBody.append(",");
                     }
-                    responseBody.append(task.toJson());
+                    responseBody.append(metadata.toJson());
                 });
             });
         });
