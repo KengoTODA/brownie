@@ -38,10 +38,9 @@ class TaskRegistryOnMemory implements TaskRegistry {
         Future<Void> future = Future.future();
         final Handler<AsyncResult<Void>> handler =
                 firstNonNull(givenHandler, result -> {});
-        if (data.containsKey(task.getKey())) {
+        if (data.putIfAbsent(task.getKey(), task) != null) {
             future.fail("Given task is already registered");
         } else {
-            data.put(task.getKey(), task);
             future.complete();
         }
         handler.handle(future);

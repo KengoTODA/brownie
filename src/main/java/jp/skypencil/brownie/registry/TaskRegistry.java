@@ -24,7 +24,7 @@ public interface TaskRegistry {
     void iterate(@Nonnull Handler<AsyncResult<ReadStream<Task>>> handler);
 
     /**
-     * Store a {@link Task} to registry. This method fails exception if given {@link Task} is already registered.
+     * Store a {@link Task} to registry. This method fails if given {@link Task} is already registered.
      * @param task
      *      Task to register
      * @param handler
