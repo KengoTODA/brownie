@@ -34,8 +34,8 @@ function numberWithCommas(x) {
 }
 function loadTasks() {
   'use strict';
-  var $row = $('#tasks');
-  var $tasks = $row.find('tbody');
+  var $div = $('#tasks');
+  var $tasks = $div.find('tbody');
   $.ajax('tasks/', {
     type: 'get'
   })
@@ -56,7 +56,7 @@ function loadTasks() {
         $tasks.closest('table').show();
     }
     if (data.length === 0) {
-      $row.find('p').show();
+      $div.find('p').show();
     } else {
       displayTable();
     }
@@ -65,8 +65,8 @@ function loadTasks() {
 
 function loadFiles() {
   'use strict';
-  var $row = $('#files');
-  var $tasks = $row.find('tbody');
+  var $div = $('#files');
+  var $tasks = $div.find('tbody');
   $.ajax('files/', {
     type: 'get'
   })
@@ -92,7 +92,7 @@ function loadFiles() {
         $tasks.closest('table').show();
     }
     if (data.length === 0) {
-      $row.find('p').show();
+      $div.find('p').show();
     } else {
       displayTable();
     }
