@@ -9,9 +9,12 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/).
 - [x] Support [clustering](http://vertx.io/docs/#clustering) based on [Hazelcast](http://hazelcast.com/)
 - [x] Support royalty-free format ([WebM](http://www.webmproject.org/)) only
 - [ ] Support distributed file systems like AWS S3, Aliyun OOS, HDFS etc.
-- [ ] Support multi resolutions to support many kinds of client
+- [ ] Support multi presets to support many kinds of client
+- [ ] Support generating thumbnail
+- [ ] Provide Swagger file for generating API client automatically
 - [ ] Provide admin console to manage running tasks and stored files
 - [x] Provide Docker container to run brownie cluster
+- [ ] Provide recommended Docker Swarm configuration for small cluster
 
 # How to run
 
