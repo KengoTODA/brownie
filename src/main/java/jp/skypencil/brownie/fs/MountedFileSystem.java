@@ -11,10 +11,6 @@ import io.vertx.core.streams.Pump;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -22,14 +18,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.stereotype.Component;
-
-@Slf4j
-@Component
+@RequiredArgsConstructor
 public class MountedFileSystem implements SharedFileSystem {
-    private final String baseDir = createDirectory();
+    private final String baseDir;
 
     @Resource
     Vertx vertx;
@@ -103,16 +96,6 @@ public class MountedFileSystem implements SharedFileSystem {
                 Pump.pump(readStream, writeStream).start();
             }
         });
-    }
-
-    private String createDirectory() {
-        try {
-            Path directory = Files.createTempDirectory("brownie");
-            log.debug("Directory to store file is created at {}", directory);
-            return directory.toFile().getAbsolutePath();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private <T> Handler<T> firstNonNull(@Nullable Handler<T> first,
