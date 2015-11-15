@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class LocalFileSystem implements SharedFileSystem {
+public class MountedFileSystem implements SharedFileSystem {
     private final String baseDir = createDirectory();
 
     @Resource

@@ -20,7 +20,7 @@ public class LocalFileSystemTest {
 
     @Test
     public void test() throws InterruptedException {
-        LocalFileSystem fileSystem = new LocalFileSystem();
+        MountedFileSystem fileSystem = new MountedFileSystem();
         fileSystem.vertx = vertxResource.getVertx();
         UUID key = UUID.randomUUID();
         byte[] initialData = new byte[128];
