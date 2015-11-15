@@ -6,10 +6,14 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
+import jp.skypencil.brownie.fs.MountedFileSystem;
+import jp.skypencil.brownie.fs.SharedFileSystem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +35,9 @@ public class Application {
      */
     @Value("${BROWNIE_CLUSTER_HOST:}")
     private String clusterHost;
+
+    @Value("${BROWNIE_MOUNTED_DIR:/mnt/brownie}")
+    private String mountedDirectory;
 
     private Future<Vertx> vertxFuture;
 
@@ -59,11 +66,12 @@ public class Application {
             return;
         }
 
-        logger.info("CLUSTER mode: use {} as host", clusterHost);
-
         ClusterManager mgr = new HazelcastClusterManager();
         VertxOptions options = new VertxOptions().setClusterManager(mgr);
         options.setClusterHost(clusterHost);
+        logger.info("CLUSTER mode: use {}:{} as host",
+                options.getClusterHost(),
+                options.getClusterPort());
 
         vertxFuture = Future.future();
         Vertx.clusteredVertx(options, result -> {
@@ -98,5 +106,15 @@ public class Application {
         vertx = vertxFuture.result();
         vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
         return vertx;
+    }
+
+    @Bean
+    public SharedFileSystem sharedFileSystem() {
+        File directory = new File(mountedDirectory);
+        if (!directory.isDirectory()) {
+            throw new IllegalStateException("Specified directory does not exist: " + mountedDirectory);
+        }
+        logger.info("Initialized shared file system at {}", mountedDirectory);
+        return new MountedFileSystem(mountedDirectory);
     }
 }

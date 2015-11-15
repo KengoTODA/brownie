@@ -15,13 +15,13 @@ import jp.skypencil.brownie.FileMetadata;
 import jp.skypencil.brownie.FileTransporter;
 
 /**
- * Interface to handle files on distributed file system.
+ * Interface to handle files on shared file system.
  * Service code should use {@link FileTransporter} instead of this interface, to update {@link FileMetadata} at the same time.
  */
 @ParametersAreNonnullByDefault
-public interface DistributedFileSystem {
+public interface SharedFileSystem {
     /**
-     * Load a file from distributed file system. This operation fails if target file does not exist.
+     * Load a file from shared file system. This operation fails if target file does not exist.
      *
      * @param key
      *      Key of file to load
@@ -31,7 +31,7 @@ public interface DistributedFileSystem {
     void load(UUID key, @Nullable Handler<AsyncResult<Buffer>> handler);
 
     /**
-     * Load a file from distributed file system, and pipe it to given {@link WriteStream}.
+     * Load a file from shared file system, and pipe it to given {@link WriteStream}.
      * This operation fails if target file does not exist.
      *
      * @param key
@@ -44,10 +44,10 @@ public interface DistributedFileSystem {
     void loadAndPipe(UUID key, WriteStream<Buffer> writeStream, @Nullable Handler<AsyncResult<Void>> handler);
 
     /**
-     * Store a file to distributed file system. This operation fails if target file already exists.
+     * Store a file to shared file system. This operation fails if target file already exists.
      *
      * @param key
-     *      Key of file on distributed file system to store
+     *      Key of file on shared file system to store
      * @param buffer
      *      Target {@link Buffer} to store
      * @param handler
@@ -56,11 +56,11 @@ public interface DistributedFileSystem {
     void store(UUID key, Buffer buffer, @Nullable Handler<AsyncResult<Void>> handler);
 
     /**
-     * Store a file to distributed file system, from given {@link ReadStream}.
+     * Store a file to shared file system, from given {@link ReadStream}.
      * This operation fails if target file already exists.
      *
      * @param key
-     *      Key of file on distributed file system to store
+     *      Key of file on shared file system to store
      * @param readStream
      *      Source {@link ReadStream} to pipe
      * @param handler

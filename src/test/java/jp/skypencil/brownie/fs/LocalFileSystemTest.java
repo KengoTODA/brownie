@@ -3,6 +3,7 @@ package jp.skypencil.brownie.fs;
 import static com.google.common.truth.Truth.assertThat;
 import io.vertx.core.buffer.Buffer;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -13,14 +14,18 @@ import jp.skypencil.brownie.VertxResource;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class LocalFileSystemTest {
     @Rule
     public VertxResource vertxResource = new VertxResource();
 
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     @Test
-    public void test() throws InterruptedException {
-        LocalFileSystem fileSystem = new LocalFileSystem();
+    public void test() throws InterruptedException, IOException {
+        MountedFileSystem fileSystem = new MountedFileSystem(folder.newFolder().getAbsolutePath());
         fileSystem.vertx = vertxResource.getVertx();
         UUID key = UUID.randomUUID();
         byte[] initialData = new byte[128];

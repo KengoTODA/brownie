@@ -16,8 +16,8 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
-import jp.skypencil.brownie.fs.DistributedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.fs.SharedFileSystem;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
@@ -31,7 +31,7 @@ public class FileTransporter {
     private Vertx vertx;
 
     @Resource
-    private DistributedFileSystem fileSystem;
+    private SharedFileSystem fileSystem;
 
     @Resource
     private FileMetadataRegistry fileMetadataRegistry;

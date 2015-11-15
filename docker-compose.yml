@@ -1,0 +1,12 @@
+front:
+  build: .
+  ports:
+    - "8080:8080"
+  volumes:
+    - ./target:/mnt/brownie
+  expose:
+    - "5701"
+    - "54327/udp"
+  environment:
+    - BROWNIE_CLUSTER_HTTP_PORT=8080
+    - BROWNIE_MOUNTED_DIR=/mnt/brownie
