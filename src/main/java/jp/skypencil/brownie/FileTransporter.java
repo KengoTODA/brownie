@@ -12,7 +12,7 @@ import io.vertx.core.file.OpenOptions;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
-import jp.skypencil.brownie.fs.DistributedFileSystem;
+import jp.skypencil.brownie.fs.SharedFileSystem;
 
 import org.springframework.stereotype.Component;
 
@@ -25,7 +25,7 @@ public class FileTransporter {
     private Vertx vertx;
 
     @Resource
-    private DistributedFileSystem fileSystem;
+    private SharedFileSystem fileSystem;
 
     void download(UUID key, Handler<AsyncResult<File>> handler) {
         String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();

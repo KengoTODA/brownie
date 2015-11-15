@@ -18,7 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
-import jp.skypencil.brownie.fs.DistributedFileSystem;
+import jp.skypencil.brownie.fs.SharedFileSystem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class FrontendServer {
     private Vertx vertx;
 
     @Resource
-    private DistributedFileSystem fileSystem;
+    private SharedFileSystem fileSystem;
 
     /**
      * TCP port number to connect. It is {@code 8080} by default, and configurable
