@@ -30,7 +30,7 @@ $ java -DBROWNIE_CLUSTER_HOST="localhost" -jar target/brownie-*.jar
 or
 ```
 $ mvn clean package
-$ docker-compose docker-compose up
+$ docker-compose up
 ```
 
 
