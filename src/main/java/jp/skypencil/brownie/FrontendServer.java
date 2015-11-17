@@ -30,9 +30,8 @@ import javax.annotation.Resource;
 import jp.skypencil.brownie.registry.FileMetadataReadStream;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.TaskRegistry;
+import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
@@ -50,8 +49,8 @@ import org.springframework.util.MimeType;
  * <p>This class is responsible to map URL to related operations.</p>
  */
 @Component
+@Slf4j
 public class FrontendServer {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     /**
      * Directory to store uploaded file.
      */
@@ -83,7 +82,7 @@ public class FrontendServer {
     private String createDirectory() {
         try {
             Path directory = Files.createTempDirectory("brownie");
-            logger.debug("Directory to store file is created at {}", directory);
+            log.debug("Directory to store file is created at {}", directory);
             return directory.toFile().getAbsolutePath();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -114,7 +113,7 @@ public class FrontendServer {
                 MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
                 fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType, stored -> {
                     if (stored.failed()) {
-                        logger.warn("Failed to store file onto file system", stored.cause());
+                        log.warn("Failed to store file onto file system", stored.cause());
                         response
                             .setStatusCode(500)
                             .end("Internal server error");
@@ -122,7 +121,7 @@ public class FrontendServer {
                     }
                     taskRegistry.store(task, taskStored -> {
                         if (taskStored.failed()) {
-                            logger.warn("Failed to store task to registry", stored.cause());
+                            log.warn("Failed to store task to registry", stored.cause());
                             response
                                 .setStatusCode(500)
                                 .end("Internal server error");
@@ -142,7 +141,7 @@ public class FrontendServer {
         router.route().handler(StaticHandler.create());
 
         vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
-        logger.info("HTTP server is listening {} port", httpPort);
+        log.info("HTTP server is listening {} port", httpPort);
     }
 
     private Router createRouterForTaskApi() {
@@ -194,7 +193,7 @@ public class FrontendServer {
                     response.putHeader("Content-Length", Long.toString(contentLength));
                     fileTransporter.downloadToPipe(key, response, downloaded -> {
                         if (downloaded.failed()) {
-                            logger.error("Failed to download file", downloaded.cause());
+                            log.error("Failed to download file", downloaded.cause());
                             response.setStatusCode(500).end("Failed to load file");
                             return;
                         }
