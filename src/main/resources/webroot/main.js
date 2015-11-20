@@ -1,3 +1,6 @@
+var React = require('react');
+var ReactDOM = require('react-dom');
+var bootstrap = require('./bootstrap.min');
 'use strict';
 function setupForm() {
   'use strict';
