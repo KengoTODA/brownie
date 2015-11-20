@@ -1,0 +1,22 @@
+{
+  "name": "brownie",
+  "version": "0.1.0",
+  "description": "a distributed video encoder",
+  "main": "src/main/resources/webroot/main.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KengoTODA/brownie.git"
+  },
+  "author": "Kengo TODA",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/KengoTODA/brownie/issues"
+  },
+  "homepage": "https://github.com/KengoTODA/brownie#readme",
+  "devDependencies": {
+    "webpack": "^1.12.6"
+  }
+}
