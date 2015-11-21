@@ -10,9 +10,11 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
+import lombok.extern.slf4j.Slf4j;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +27,8 @@ import org.springframework.context.annotation.Bean;
  * An entry point to launch brownie server. To execute this class, simply run {@code java -jar}.
  */
 @SpringBootApplication
+@Slf4j
 public class Application {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     /**
      * Host name to connect. To enable cluster mode, user should specify this value by
      * {@code BROWNIE_CLUSTER_HOST} system property.
@@ -39,6 +40,8 @@ public class Application {
     private String mountedDirectory;
 
     private Future<Vertx> vertxFuture;
+
+    private Vertx vertx;
 
     public static void main(String[] args) {
         // specify logging framework
@@ -57,8 +60,8 @@ public class Application {
     @PostConstruct
     public void prepareCluster() {
         if (clusterHost.isEmpty()) {
-            logger.info("STANDALONE mode: system property BROWNIE_CLUSTER_HOST not found");
-            Vertx vertx = Vertx.vertx();
+            log.info("STANDALONE mode: system property BROWNIE_CLUSTER_HOST not found");
+            vertx = Vertx.vertx();
             vertxFuture = Future.succeededFuture(vertx);
             return;
         }
@@ -66,7 +69,7 @@ public class Application {
         ClusterManager mgr = new HazelcastClusterManager();
         VertxOptions options = new VertxOptions().setClusterManager(mgr);
         options.setClusterHost(clusterHost);
-        logger.info("CLUSTER mode: use {}:{} as host",
+        log.info("CLUSTER mode: use {}:{} as host",
                 options.getClusterHost(),
                 options.getClusterPort());
 
@@ -78,6 +81,13 @@ public class Application {
                 vertxFuture.complete(result.result());
             }
         });
+    }
+
+    @PreDestroy
+    public void cleanUp() {
+        if (vertx != null) {
+            vertx.close();
+        }
     }
 
     /**
@@ -93,7 +103,7 @@ public class Application {
         if (vertxFuture.failed()) {
             throw new IllegalStateException("Failed to connect to cluster", vertxFuture.cause());
         }
-        Vertx vertx = vertxFuture.result();
+        vertx = vertxFuture.result();
         vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
         return vertx;
     }
@@ -104,7 +114,7 @@ public class Application {
         if (!directory.isDirectory()) {
             throw new IllegalStateException("Specified directory does not exist: " + mountedDirectory);
         }
-        logger.info("Initialized shared file system at {}", mountedDirectory);
+        log.info("Initialized shared file system at {}", mountedDirectory);
         return new MountedFileSystem(mountedDirectory);
     }
 }

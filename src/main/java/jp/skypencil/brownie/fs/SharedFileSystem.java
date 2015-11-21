@@ -11,8 +11,12 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import jp.skypencil.brownie.FileMetadata;
+import jp.skypencil.brownie.FileTransporter;
+
 /**
  * Interface to handle files on shared file system.
+ * Service code should use {@link FileTransporter} instead of this interface, to update {@link FileMetadata} at the same time.
  */
 @ParametersAreNonnullByDefault
 public interface SharedFileSystem {

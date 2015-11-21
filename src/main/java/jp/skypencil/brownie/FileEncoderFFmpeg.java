@@ -13,9 +13,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
 import jp.skypencil.brownie.fs.SharedFileSystem;
+import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,10 +22,9 @@ import org.springframework.stereotype.Component;
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
 @Component
+@Slf4j
 @ParametersAreNonnullByDefault
 public class FileEncoderFFmpeg implements FileEncoder {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     @Resource
     private Vertx vertx;
 
@@ -48,7 +46,7 @@ public class FileEncoderFFmpeg implements FileEncoder {
     private Handler<Future<File>> convert(File targetFile,
             String resolution, final int processors) {
         return future -> {
-            logger.info("Converting {} to {}", targetFile, resolution);
+            log.info("Converting {} to {}", targetFile, resolution);
             String resultFileName = targetFile.getAbsolutePath() + "-" + resolution + ".webm";
             ProcessBuilder builder = new ProcessBuilder().command("ffmpeg",
                     "-i", targetFile.getAbsolutePath(),

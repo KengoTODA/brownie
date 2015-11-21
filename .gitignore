@@ -3,3 +3,6 @@ target
 .project
 .settings
 .vertx
+node_modules
+src/main/resources/webroot/bundle.js
+

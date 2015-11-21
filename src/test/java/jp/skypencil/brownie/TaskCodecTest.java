@@ -3,6 +3,7 @@ package jp.skypencil.brownie;
 import io.vertx.core.buffer.Buffer;
 
 import java.util.Collections;
+import java.util.UUID;
 
 import org.junit.Test;
 
@@ -12,7 +13,8 @@ public class TaskCodecTest {
 
     @Test
     public void test() {
-        Task task = new Task("file", Collections.singleton("resolution"));
+        UUID taskId = new KeyGenerator().generateUuidV1();
+        Task task = new Task(taskId, "file", Collections.singleton("resolution"));
         TaskCodec codec = new TaskCodec();
         Buffer buffer = Buffer.buffer();
         codec.encodeToWire(buffer, task);

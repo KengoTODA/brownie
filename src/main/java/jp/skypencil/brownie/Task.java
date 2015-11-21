@@ -1,9 +1,11 @@
 package jp.skypencil.brownie;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -19,19 +21,27 @@ public final class Task {
     private final String uploadedFileName;
     @Nonnull
     private final Set<String> resolutions;
-
-    Task(String uploadedFileName, Set<String> resolutions) {
-        this(generateUuidV1(), uploadedFileName, resolutions);
-    }
+    @Nonnull
+    private final Instant registered;
 
     Task(UUID key, String uploadedFileName, Set<String> resolutions) {
+        this(key, uploadedFileName, resolutions, Instant.now());
+    }
+
+    Task(UUID key, String uploadedFileName, Set<String> resolutions, Instant registered) {
         this.key = Objects.requireNonNull(key);
         this.uploadedFileName = Objects.requireNonNull(uploadedFileName);
         this.resolutions = new HashSet<>(Objects.requireNonNull(resolutions));
+        this.registered = registered;
     }
 
-    @Nonnull
-    private static UUID generateUuidV1() {
-        return UUID.fromString(new com.eaio.uuid.UUID().toString());
+    String toJson() {
+        return String.format("{\"key\":\"%s\",\"fileName\":\"%s\",\"resolutions\":[%s],\"registered\":%d}",
+                key,
+                uploadedFileName,
+                resolutions.stream()
+                    .map(resolution -> "\"" + resolution + "\"")
+                    .collect(Collectors.joining(",")),
+                registered.toEpochMilli());
     }
 }
