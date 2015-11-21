@@ -9,7 +9,7 @@ var Task = React.createClass({
   render: function() {
     var registered = new Date(this.props.registered) + '';
     return (
-      <tr data-key="{this.prop.key}">
+      <tr>
         <td>{this.props.fileName}</td>
         <td>{registered}</td>
       </tr>

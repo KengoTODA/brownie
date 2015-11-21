@@ -19,8 +19,8 @@ var File = React.createClass({
     var contentLength = numberWithCommas(this.props.contentLength) + ' bytes';
     var generated = new Date(this.props.generated) + '';
     return (
-      <tr data-key="{this.prop.fileId}">
-        <td><a href="{url}">{this.props.fileName}</a></td>
+      <tr>
+        <td><a href={url}>{this.props.fileName}</a></td>
         <td className="contentLength">{contentLength}</td>
         <td>{generated}</td>
       </tr>
@@ -51,6 +51,7 @@ var FileList = React.createClass({
         return (
           <File
               key={file.fileId}
+              fileId={file.fileId}
               fileName={file.fileName}
               contentLength={file.contentLength}
               generated={file.generated}>
