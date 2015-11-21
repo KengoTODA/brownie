@@ -4,7 +4,7 @@
   "description": "a distributed video encoder",
   "main": "src/main/resources/webroot/main.js",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack -p"
   },
   "repository": {
     "type": "git",
@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/KengoTODA/brownie#readme",
   "devDependencies": {
+    "jsx-loader": "^0.13.2",
     "webpack": "^1.12.6"
   },
   "dependencies": {

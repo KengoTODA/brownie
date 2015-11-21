@@ -1,7 +1,11 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
+var $;
+window.jQuery = $ = require('./jquery-2.1.4.min');
 var bootstrap = require('./bootstrap.min');
+var TaskList = require('./task-list.jsx');
 'use strict';
+
 function setupForm() {
   'use strict';
   var $form = $('#post-video').submit(function(e){
@@ -37,33 +41,14 @@ function numberWithCommas(x) {
 }
 function loadTasks() {
   'use strict';
-  var $div = $('#tasks');
-  var $tasks = $div.find('tbody');
-  $.ajax('tasks/', {
-    type: 'get'
-  })
-  .done(function(data) {
-    'use strict';
-    function displayTable() {
-        var flagment = document.createDocumentFragment();
-        $.each(data, function(i, task) {
-          'use strict';
-          var $tr = $('<tr>').data('key', task['key']).append(
-            $('<td>').text(task['fileName'])
-          ).append(
-            $('<td>').text(new Date(task['registered']))
-          );
-          flagment.appendChild($tr[0]);
-        });
-        $tasks[0].appendChild(flagment);
-        $tasks.closest('table').show();
-    }
-    if (data.length === 0) {
-      $div.find('p').show();
-    } else {
-      displayTable();
-    }
-  });
+  /**
+   * @type {!Element}
+   */
+  var $tasks = document.getElementById('tasks');
+  ReactDOM.render(
+    <TaskList url="/tasks" pollInterval={2000} />,
+    $tasks
+  );
 }
 
 function loadFiles() {
