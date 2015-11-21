@@ -13,7 +13,7 @@ var Task = React.createClass({
         <td>{this.props.fileName}</td>
         <td>{registered}</td>
       </tr>
-    )
+    );
   }
 });
 var TaskList = React.createClass({

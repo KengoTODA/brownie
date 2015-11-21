@@ -4,6 +4,7 @@ var $;
 window.jQuery = $ = require('./jquery-2.1.4.min');
 var bootstrap = require('./bootstrap.min');
 var TaskList = require('./task-list.jsx');
+var FileList = require('./file-list.jsx');
 'use strict';
 
 function setupForm() {
@@ -32,13 +33,7 @@ function setupForm() {
   var $result = $form.find('#result');
   var action = $form.attr('action');
 }
-/**
- * @param {number} x
- * @return {string}
- */
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
+
 function loadTasks() {
   'use strict';
   /**
@@ -53,38 +48,14 @@ function loadTasks() {
 
 function loadFiles() {
   'use strict';
-  var $div = $('#files');
-  var $tasks = $div.find('tbody');
-  $.ajax('files/', {
-    type: 'get'
-  })
-  .done(function(data) {
-    'use strict';
-    function displayTable() {
-        var flagment = document.createDocumentFragment();
-        $.each(data, function(i, file) {
-          'use strict';
-          var fileId = file['fileId'];
-          var $tr = $('<tr>').data('key', fileId).append(
-            $('<td>').append(
-              $('<a>').text(file['fileName']).attr('href', 'files/' + fileId)
-            )
-          ).append(
-            $('<td>').text(numberWithCommas(file['contentLength']) + ' bytes').css('text-align', 'right')
-          ).append(
-            $('<td>').text(new Date(file['generated']))
-          );
-          flagment.appendChild($tr[0]);
-        });
-        $tasks[0].appendChild(flagment);
-        $tasks.closest('table').show();
-    }
-    if (data.length === 0) {
-      $div.find('p').show();
-    } else {
-      displayTable();
-    }
-  });
+  /**
+   * @type {!Element}
+   */
+  var $files = document.getElementById('files');
+  ReactDOM.render(
+    <FileList pollInterval={2000} />,
+    $files
+  );
 }
 setupForm();
 loadTasks();
