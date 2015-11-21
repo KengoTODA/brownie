@@ -37,11 +37,6 @@
       <version>${vertx.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-web-templ-handlebars</artifactId>
-      <version>${vertx.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.eaio.uuid</groupId>
       <artifactId>uuid</artifactId>
       <version>3.4</version>
