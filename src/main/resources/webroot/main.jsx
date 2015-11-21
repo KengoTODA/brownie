@@ -5,6 +5,8 @@ window.jQuery = $ = require('./jquery-2.1.4.min');
 var bootstrap = require('./bootstrap.min');
 var TaskList = require('./task-list.jsx');
 var FileList = require('./file-list.jsx');
+require('./css/bootstrap.min.css');
+require('./main.css');
 'use strict';
 
 function setupForm() {
