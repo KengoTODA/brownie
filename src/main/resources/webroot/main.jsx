@@ -34,29 +34,13 @@ function setupForm() {
   var action = $form.attr('action');
 }
 
-function loadTasks() {
-  'use strict';
-  /**
-   * @type {!Element}
-   */
-  var $tasks = document.getElementById('tasks');
-  ReactDOM.render(
-    <TaskList url="/tasks" pollInterval={2000} />,
-    $tasks
-  );
-}
-
-function loadFiles() {
-  'use strict';
-  /**
-   * @type {!Element}
-   */
-  var $files = document.getElementById('files');
-  ReactDOM.render(
-    <FileList pollInterval={2000} />,
-    $files
-  );
-}
 setupForm();
-loadTasks();
-loadFiles();
+
+ReactDOM.render(
+  <TaskList pollInterval={2000} />,
+  document.getElementById('tasks')
+);
+ReactDOM.render(
+  <FileList pollInterval={2000} />,
+  document.getElementById('files')
+);
