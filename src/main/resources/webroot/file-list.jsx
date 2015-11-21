@@ -21,7 +21,7 @@ var File = React.createClass({
     return (
       <tr data-key="{this.prop.fileId}">
         <td><a href="{url}">{this.props.fileName}</a></td>
-        <td style={{textAlign: 'right'}}>{contentLength}</td>
+        <td className="contentLength">{contentLength}</td>
         <td>{generated}</td>
       </tr>
     );
