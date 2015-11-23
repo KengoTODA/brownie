@@ -14,13 +14,22 @@ function numberWithCommas(x) {
 
 var File = React.createClass({
   displayName: 'File',
+  deleteFile: function() {
+    $.ajax('files/' + this.props.fileId, {
+      type: 'delete',
+      cache: false
+    });
+  },
   render: function() {
     var url = 'files/' + this.props.fileId;
     var contentLength = numberWithCommas(this.props.contentLength) + ' bytes';
     var generated = new Date(this.props.generated) + '';
     return (
       <tr>
-        <td><a href={url}>{this.props.fileName}</a></td>
+        <td>
+          <a href={url}>{this.props.fileName}</a>
+          <i className="deleteBtn" onClick={this.deleteFile}>&times;</i>
+        </td>
         <td className="contentLength">{contentLength}</td>
         <td>{generated}</td>
       </tr>

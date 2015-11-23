@@ -12,7 +12,7 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/).
 - [ ] Support multi presets to support many kinds of client
 - [ ] Support generating thumbnail
 - [ ] Provide Swagger file for generating API client automatically
-- [ ] Provide admin console to manage running tasks and stored files
+- [x] Provide admin console to manage running tasks and stored files
 - [x] Provide Docker container to run brownie cluster
 - [ ] Provide recommended Docker Swarm configuration for small cluster
 
