@@ -136,4 +136,15 @@ public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
             }
         }
     }
+
+    @Override
+    public void delete(UUID fileId, Handler<AsyncResult<Void>> handler) {
+        final Future<Void> future;
+        if (data.remove(fileId) == null) {
+            future = Future.failedFuture("No metadata found to delete");
+        } else {
+            future = Future.succeededFuture();
+        }
+        handler.handle(future);
+    }
 }

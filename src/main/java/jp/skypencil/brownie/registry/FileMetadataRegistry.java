@@ -50,4 +50,13 @@ public interface FileMetadataRegistry {
      *      Callback to handle result
      */
     void load(@FileId UUID fileId, Handler<AsyncResult<Optional<FileMetadata>>> handler);
+
+    /**
+     * Delete a {@FileMetadata} from registry.
+     * @param fileId
+     *      ID of target {@link FileMetadata} to load
+     * @param handler
+     *      Callback to handle result
+     */
+    void delete(@FileId UUID fileId, @Nullable Handler<AsyncResult<Void>> handler);
 }
