@@ -106,4 +106,10 @@ public class MountedFileSystem implements SharedFileSystem {
             return first;
         }
     }
+
+    @Override
+    public void delete(UUID key, Handler<AsyncResult<Void>> handler) {
+        String path = baseDir + "/" + Objects.requireNonNull(key);
+        vertx.fileSystem().delete(path, handler);
+    }
 }

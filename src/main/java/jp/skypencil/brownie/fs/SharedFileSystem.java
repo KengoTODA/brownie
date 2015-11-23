@@ -67,4 +67,14 @@ public interface SharedFileSystem {
      *      Callback function to handle result
      */
     void pipeToStore(UUID key, ReadStream<Buffer> readStream, @Nullable Handler<AsyncResult<Void>> handler);
+
+    /**
+     * Delete a file stored on shared file system.
+     *
+     * @param key
+     *      Key of file on shared file system to store
+     * @param handler
+     *      Callback function to handle result
+     */
+    void delete(UUID key, @Nullable Handler<AsyncResult<Void>> handler);
 }
