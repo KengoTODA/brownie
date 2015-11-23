@@ -179,7 +179,23 @@ public class FrontendServer {
             String fileId = ctx.request().getParam("fileId");
             downloadFile(ctx, fileId);
         });
+        subRouter.delete("/:fileId").handler(ctx -> {
+            String fileId = ctx.request().getParam("fileId");
+            deleteFile(ctx, fileId);
+        });
         return subRouter;
+    }
+
+    private void deleteFile(RoutingContext ctx, String fileId) {
+        HttpServerResponse response = ctx.response();
+        UUID key = UUID.fromString(fileId);
+        fileMetadataRegistry.delete(key, deleted -> {
+            if (deleted.succeeded()) {
+                response.end("deleted");
+            } else {
+                response.setStatusCode(500).end("Failed to load file");
+            }
+        });
     }
 
     private void downloadFile(RoutingContext ctx, String fileId) {
