@@ -189,7 +189,7 @@ public class FrontendServer {
     private void deleteFile(RoutingContext ctx, String fileId) {
         HttpServerResponse response = ctx.response();
         UUID key = UUID.fromString(fileId);
-        fileMetadataRegistry.delete(key, deleted -> {
+        fileTransporter.delete(key, deleted -> {
             if (deleted.succeeded()) {
                 response.end("deleted");
             } else {
