@@ -11,13 +11,14 @@ import io.vertx.core.streams.WriteStream;
 import java.io.File;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
-import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
@@ -90,5 +91,30 @@ public class FileTransporter {
 
     void downloadToPipe(UUID key, WriteStream<Buffer> buffer, @Nullable Handler<AsyncResult<Void>> handler) {
         fileSystem.loadAndPipe(key, buffer, handler);
+    }
+
+    void delete(UUID key, Handler<AsyncResult<Void>> handler) {
+        AtomicInteger finished = new AtomicInteger(2);
+        Future<Void> future = Future.future();
+        fileMetadataRegistry.delete(key, metadataDeleted -> {
+            if (metadataDeleted.failed()) {
+                future.fail(metadataDeleted.cause());
+                handler.handle(future);
+            }
+            if (finished.decrementAndGet() == 0 && !future.isComplete()) {
+                future.complete();
+                handler.handle(future);
+            }
+        });
+        fileSystem.delete(key, fileDeleted -> {
+            if (fileDeleted.failed()) {
+                future.fail(fileDeleted.cause());
+                handler.handle(future);
+            }
+            if (finished.decrementAndGet() == 0 && !future.isComplete()) {
+                future.complete();
+                handler.handle(future);
+            }
+        });
     }
 }
