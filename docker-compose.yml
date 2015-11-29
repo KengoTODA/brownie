@@ -1,7 +1,28 @@
+consul:
+  command: -server -bootstrap-expect 1 -ui-dir /ui
+  image: progrium/consul
+  ports:
+    - "8300"
+    - "8400"
+    - "8500"
+    - "8600/udp"
+  net: "host"
+  environment:
+    - "affinity:container!=nodes_consul_*"
+    - GOMAXPROCS=2
+registrator:
+  image: gliderlabs/registrator
+  command: consul://127.0.0.1:8500
+  container_name: registrator
+  net: "host"
+  environment:
+    - "affinity:container!=nodes_registrator_*"
+  volumes:
+    - /var/run/docker.sock:/tmp/docker.sock
 front:
   build: .
   ports:
-    - "8080:8080"
+    - "8080"
   volumes:
     - ./target:/mnt/brownie
   expose:
