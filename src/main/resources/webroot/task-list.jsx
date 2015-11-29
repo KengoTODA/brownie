@@ -4,9 +4,8 @@ var $ = require('./jquery-2.1.4.min');
 
 'use strict';
 
-var Task = React.createClass({
-  displayName: 'Task',
-  render: function() {
+class Task extends React.Component {
+  render() {
     var registered = new Date(this.props.registered) + '';
     return (
       <tr>
@@ -15,26 +14,26 @@ var Task = React.createClass({
       </tr>
     );
   }
-});
-var TaskList = React.createClass({
-  displayName: 'TaskList',
-  getInitialState: function() {
-    return {tasks: []};
-  },
-  reload: function() {
+}
+class TaskList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tasks: []
+    };
+  }
+  reload() {
+    let handler = data => this.setState({tasks: data});
     $.ajax('tasks/', {
       type: 'get',
       cache: false,
-    })
-    .done(function(data) {
-      this.setState({tasks: data});
-    }.bind(this));
-  },
-  componentDidMount: function() {
+    }).done(handler);
+  }
+  componentDidMount() {
     this.reload();
-    setInterval(this.reload, this.props.pollInterval);
-  },
-  render: function() {
+    setInterval(() => this.reload(), this.props.pollInterval);
+  }
+  render() {
     if (this.state.tasks.length) {
       var taskNodes = this.state.tasks.map(function(task) {
         return (
@@ -72,6 +71,6 @@ var TaskList = React.createClass({
       );
     }
   }
-});
+}
 
 module.exports = TaskList;

@@ -12,51 +12,52 @@ function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-var File = React.createClass({
-  displayName: 'File',
-  deleteFile: function() {
+class File extends React.Component {
+  deleteFile() {
     $.ajax('files/' + this.props.fileId, {
       type: 'delete',
       cache: false
     });
-  },
-  render: function() {
-    var url = 'files/' + this.props.fileId;
-    var contentLength = numberWithCommas(this.props.contentLength) + ' bytes';
-    var generated = new Date(this.props.generated) + '';
+  }
+
+  render() {
+    let url = 'files/' + this.props.fileId;
+    let contentLength = numberWithCommas(this.props.contentLength) + ' bytes';
+    let generated = new Date(this.props.generated) + '';
     return (
       <tr>
         <td>
           <a href={url}>{this.props.fileName}</a>
-          <i className="deleteBtn" onClick={this.deleteFile}>&times;</i>
+          <i className="deleteBtn" onClick={this.deleteFile.bind(this)}>&times;</i>
         </td>
         <td className="contentLength">{contentLength}</td>
         <td>{generated}</td>
       </tr>
     );
   }
-});
-var FileList = React.createClass({
-  displayName: 'FileList',
-  getInitialState: function() {
-    return {files: []};
-  },
-  reload: function() {
+}
+
+class FileList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      files: []
+    };
+  }
+  reload() {
+    let handler = data => this.setState({files: data});
     $.ajax('files/', {
       type: 'get',
       cache: false,
-    })
-    .done(function(data) {
-      this.setState({files: data});
-    }.bind(this));
-  },
-  componentDidMount: function() {
+    }).done(handler);
+  }
+  componentDidMount() {
     this.reload();
-    setInterval(this.reload, this.props.pollInterval);
-  },
-  render: function() {
+    setInterval(() => this.reload(), this.props.pollInterval);
+  }
+  render() {
     if (this.state.files.length) {
-      var fileNodes = this.state.files.map(function(file) {
+      let fileNodes = this.state.files.map(function(file) {
         return (
           <File
               key={file.fileId}
@@ -95,6 +96,6 @@ var FileList = React.createClass({
       );
     }
   }
-});
+}
 
 module.exports = FileList;

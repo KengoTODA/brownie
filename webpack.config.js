@@ -8,7 +8,7 @@ module.exports = {
     },
     module: {
       loaders: [
-        { test: /\.jsx$/, loader: 'jsx-loader' },
+        { test: /\.jsx$/, loader: 'babel-loader' },
         {
           test: /\.css$/,
           loader: ExtractTextPlugin.extract("style-loader", "css-loader")

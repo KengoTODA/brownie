@@ -1,20 +1,20 @@
-var React = require('react');
-var ReactDOM = require('react-dom');
-var $;
+let React = require('react');
+let ReactDOM = require('react-dom');
+let $;
 window.jQuery = $ = require('./jquery-2.1.4.min');
-var bootstrap = require('./bootstrap.min');
-var TaskList = require('./task-list.jsx');
-var FileList = require('./file-list.jsx');
+let bootstrap = require('./bootstrap.min');
+let TaskList = require('./task-list.jsx');
+let FileList = require('./file-list.jsx');
 require('./css/bootstrap.min.css');
 require('./main.css');
 'use strict';
 
 function setupForm() {
   'use strict';
-  var $form = $('#post-video').submit(function(e){
+  let $form = $('#post-video').submit((e) => {
     'use strict';
     e.preventDefault();
-    var formData = new FormData($form[0]);
+    let formData = new FormData($form[0]);
     $.ajax(action, {
       processData: false,
       type: 'post',
@@ -22,18 +22,18 @@ function setupForm() {
       dataType: 'text',
       data: formData
     })
-    .done(function(data) {
+    .done((data) => {
       'use strict';
       $result.addClass('info').removeClass('warning').text(data).show();
     })
-    .fail(function() {
+    .fail(() => {
       'use strict';
       $result.addClass('warning').removeClass('info').text('failed to register').show();
     });
     return false;
   });
-  var $result = $form.find('#result');
-  var action = $form.attr('action');
+  let $result = $form.find('#result');
+  let action = $form.attr('action');
 }
 
 setupForm();
