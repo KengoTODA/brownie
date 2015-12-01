@@ -27,8 +27,11 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 @Slf4j
 public class Application {
+    @Value("${BROWNIE_CLUSTER_MODE:false}")
+    private boolean clusterMode;
+
     /**
-     * Host name to connect. To enable cluster mode, user should specify this value by
+     * Host name to use for cluster mode. To enable cluster mode, user may specify this value by
      * {@code BROWNIE_CLUSTER_HOST} system property.
      */
     @Value("${BROWNIE_CLUSTER_HOST:}")
@@ -57,8 +60,8 @@ public class Application {
      */
     @PostConstruct
     public void prepareCluster() {
-        if (clusterHost.isEmpty()) {
-            log.info("STANDALONE mode: system property BROWNIE_CLUSTER_HOST not found");
+        if (!clusterMode) {
+            log.info("STANDALONE mode: system property BROWNIE_CLUSTER_MODE is falsy");
             vertx = Vertx.vertx();
             vertxFuture = Future.succeededFuture(vertx);
             return;
@@ -66,7 +69,9 @@ public class Application {
 
         ClusterManager mgr = new HazelcastClusterManager();
         VertxOptions options = new VertxOptions().setClusterManager(mgr);
-        options.setClusterHost(clusterHost);
+        if (!clusterHost.isEmpty()) {
+            options.setClusterHost(clusterHost);
+        }
         log.info("CLUSTER mode: use {}:{} as host",
                 options.getClusterHost(),
                 options.getClusterPort());
