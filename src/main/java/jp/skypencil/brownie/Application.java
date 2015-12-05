@@ -118,8 +118,14 @@ public class Application {
         return vertx;
     }
 
+    /**
+     * Generate {@link DnsClient} instance, to resolve SRV record for service discovery.
+     *
+     * @return {@link DnsClient} instance to use in this application
+     */
     @Bean
     public DnsClient dnsClient() throws InterruptedException {
+        log.info("Creating DnsClient for {}:{}", dnsHost, dnsPort);
         return vertx().createDnsClient(dnsPort, dnsHost);
     }
 
