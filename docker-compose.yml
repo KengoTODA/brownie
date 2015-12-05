@@ -32,10 +32,14 @@ nginx:
     - front
   environment:
     - DEFAULT_HOST=front.service.consul
+storage:
+  image: debian:jessie
+  volumes:
+    - /mnt/brownie
 front:
   build: .
-  volumes:
-    - ./target:/mnt/brownie
+  volumes_from:
+    - storage
   links:
     - consul
   dns:
