@@ -14,7 +14,7 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/).
 - [ ] Provide Swagger file for generating API client automatically
 - [x] Provide admin console to manage running tasks and stored files
 - [x] Provide Docker container to run brownie cluster
-- [ ] Provide recommended Docker Swarm configuration for small cluster
+- [x] Provide recommended Docker Compose configuration for small cluster
 
 # How to run
 
