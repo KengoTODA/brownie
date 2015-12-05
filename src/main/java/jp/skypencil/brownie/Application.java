@@ -3,6 +3,7 @@ package jp.skypencil.brownie;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.dns.DnsClient;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 
@@ -39,6 +40,12 @@ public class Application {
 
     @Value("${BROWNIE_MOUNTED_DIR:/mnt/brownie}")
     private String mountedDirectory;
+
+    @Value("${BROWNIE_DNS_HOST:'localhost'}")
+    private String dnsHost;
+
+    @Value("${BROWNIE_DNS_PORT:53}")
+    private int dnsPort;
 
     private Future<Vertx> vertxFuture;
 
@@ -109,6 +116,17 @@ public class Application {
         vertx = vertxFuture.result();
         vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
         return vertx;
+    }
+
+    /**
+     * Generate {@link DnsClient} instance, to resolve SRV record for service discovery.
+     *
+     * @return {@link DnsClient} instance to use in this application
+     */
+    @Bean
+    public DnsClient dnsClient() throws InterruptedException {
+        log.info("Creating DnsClient for {}:{}", dnsHost, dnsPort);
+        return vertx().createDnsClient(dnsPort, dnsHost);
     }
 
     @Bean
