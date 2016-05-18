@@ -1,3 +1,5 @@
+# note: currently jwilder/nginx-proxy does not work with docker-compose v2 configuration
+# https://github.com/jwilder/nginx-proxy#docker-compose
 consul:
   command: -server -bootstrap -client 0.0.0.0 -ui-dir /ui
   image: progrium/consul
