@@ -1,62 +1,63 @@
 # note: currently jwilder/nginx-proxy does not work with docker-compose v2 configuration
 # https://github.com/jwilder/nginx-proxy#docker-compose
-consul:
-  command: -server -bootstrap -client 0.0.0.0 -ui-dir /ui
-  image: progrium/consul
-  ports:
-    - "8300"
-    - "8400"
-    - "8500"
-    - "8600/tcp"
-    - "8600/udp"
-  environment:
-    - "affinity:container!=nodes_consul_*"
-    - GOMAXPROCS=2
-registrator:
-  image: gliderlabs/registrator
-  command: consul://consul:8500 -ip 127.0.0.1
-  hostname: default
-  container_name: registrator
-  links:
-    - consul
-  environment:
-    - "affinity:container!=nodes_registrator_*"
-  volumes:
-    - /var/run/docker.sock:/tmp/docker.sock
-nginx:
-  image: jwilder/nginx-proxy
-  ports:
-    - "80:80"
-  volumes:
-    - /var/run/docker.sock:/tmp/docker.sock
-    - ./src/main/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
-  links:
-    - front
-  environment:
-    - DEFAULT_HOST=front.service.consul
-storage:
-  image: debian:jessie
-  volumes:
-    - /mnt/brownie
-front:
-  build: .
-  volumes_from:
-    - storage
-  links:
-    - consul
-  dns:
-    - consul
-  dns_search:
-    - service.consul
-  ports:
-    - "8080"
-    - "5701"
-    - "54327/udp"
-  environment:
-    - BROWNIE_CLUSTER_MODE=true
-    - BROWNIE_CLUSTER_HTTP_PORT=8080
-    - BROWNIE_DNS_HOST=consul
-    - BROWNIE_DNS_PORT=8600
-    - BROWNIE_MOUNTED_DIR=/mnt/brownie
-    - VIRTUAL_HOST=front.service.consul
-    - VIRTUAL_PORT=8080
+version: "2"
+services:
+  consul:
+    command: -server -bootstrap -client 0.0.0.0 -ui-dir /ui
+    image: progrium/consul
+    expose:
+      - "8300"
+      - "8400"
+      - "8500"
+      - "8600/tcp"
+      - "8600/udp"
+    environment:
+      - "affinity:container!=nodes_consul_*"
+      - GOMAXPROCS=2
+  registrator:
+    image: gliderlabs/registrator
+    command: consul://consul:8500 -ip 127.0.0.1
+    hostname: default
+    container_name: registrator
+    depends_on:
+      - consul
+    environment:
+      - "affinity:container!=nodes_registrator_*"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+  nginx:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+      - ./src/main/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
+    depends_on:
+      - front
+    environment:
+      - DEFAULT_HOST=front.service.consul
+  front:
+    build: .
+    volumes:
+      - storage:/mnt/brownie
+    depends_on:
+      - consul
+    dns:
+      - consul
+    dns_search:
+      - service.consul
+    expose:
+      - "8080"
+      - "5701"
+      - "54327/udp"
+    environment:
+      - BROWNIE_CLUSTER_MODE=true
+      - BROWNIE_CLUSTER_HTTP_PORT=8080
+      - BROWNIE_DNS_HOST=consul
+      - BROWNIE_DNS_PORT=8600
+      - BROWNIE_MOUNTED_DIR=/mnt/brownie
+      - VIRTUAL_HOST=front.service.consul
+      - VIRTUAL_PORT=8080
+volumes:
+  storage:
+    external: false
