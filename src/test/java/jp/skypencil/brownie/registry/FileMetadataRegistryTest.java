@@ -7,32 +7,21 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nonnull;
+
+import org.junit.Test;
+import org.springframework.util.MimeType;
+
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-import org.springframework.util.MimeType;
-
-@RunWith(Parameterized.class)
-public class FileMetadataRegistryTest {
-    @Parameters
-    public static Object[][] createImplementations() {
-        return new Object[][]{
-                new Object[] {
-                        new FileMetadataRegistryOnMemory()
-                }
-        };
-    }
-
-    @Parameter(0)
-    public FileMetadataRegistry registry;
+abstract class FileMetadataRegistryTest {
+    @Nonnull
+    abstract FileMetadataRegistry createRegistry();
 
     @Test
     public void testDelete() throws InterruptedException {
+        FileMetadataRegistry registry = createRegistry();
         @FileId
         UUID fileId = UUID.randomUUID();
         CountDownLatch latch = new CountDownLatch(1);
@@ -49,6 +38,7 @@ public class FileMetadataRegistryTest {
 
     @Test
     public void testDeleteFailedWhenWeHaveNoFileMetadata() throws InterruptedException {
+        FileMetadataRegistry registry = createRegistry();
         @FileId
         UUID fileId = UUID.randomUUID();
         CountDownLatch latch = new CountDownLatch(1);

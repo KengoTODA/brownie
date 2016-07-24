@@ -205,7 +205,7 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         this.postgreSQLClient.close();
     }
 
