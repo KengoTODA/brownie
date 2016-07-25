@@ -23,7 +23,7 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
 
     FileMetadataRegistryOnPostgres(String host, Vertx vertx) {
         JsonObject postgreSQLClientConfig = new JsonObject()
-                .put("host", host)
+                .put("host", System.getProperty("db.host", "localhost"))
                 .put("username", "brownie")
                 .put("password", "brownie")
                 .put("database", "brownie");
