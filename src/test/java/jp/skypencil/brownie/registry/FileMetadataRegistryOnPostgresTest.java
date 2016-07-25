@@ -8,6 +8,6 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 public class FileMetadataRegistryOnPostgresTest extends FileMetadataRegistryTest {
     @Override
     FileMetadataRegistry createRegistry() {
-        return new FileMetadataRegistryOnPostgres("192.168.99.100", vertx);
+        return new FileMetadataRegistryOnPostgres(System.getProperty("db.host", "localhost"), vertx);
     }
 }

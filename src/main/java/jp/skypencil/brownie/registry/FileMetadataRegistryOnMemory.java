@@ -1,23 +1,19 @@
 package jp.skypencil.brownie.registry;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.springframework.stereotype.Component;
-
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import jp.skypencil.brownie.FileMetadata;
 
 /**
  * An implementation of {@link FileMetadataRegistry}, which stores data on memory.
  */
-@Component
 public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
     private final ConcurrentMap<UUID, FileMetadata> data = new ConcurrentHashMap<>();
 
