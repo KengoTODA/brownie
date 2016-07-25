@@ -199,8 +199,10 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
                     if (selected.failed()) {
                         future.fail(selected.cause());
                         con.rollback(rolled -> {
-                            if (handler != null) {
-                                handler.handle(future);
+                            try (SQLConnection connection = con) {
+                                if (handler != null) {
+                                    handler.handle(future);
+                                }
                             }
                         });
                         return;
@@ -209,8 +211,10 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
                     if (count == 0) {
                         future.fail("No record found");
                         con.rollback(rolled -> {
-                            if (handler != null) {
-                                handler.handle(future);
+                            try (SQLConnection connection = con) {
+                                if (handler != null) {
+                                    handler.handle(future);
+                                }
                             }
                         });
                         return;
@@ -220,15 +224,19 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
                                 if (res.failed()) {
                                     future.fail(res.cause());
                                     con.rollback(rolled -> {
-                                        if (handler != null) {
-                                            handler.handle(future);
+                                        try (SQLConnection connection = con) {
+                                            if (handler != null) {
+                                                handler.handle(future);
+                                            }
                                         }
                                     });
                                 } else {
                                     future.complete();
                                     con.commit(commit -> {
-                                        if (handler != null) {
-                                            handler.handle(future);
+                                        try (SQLConnection connection = con) {
+                                            if (handler != null) {
+                                                handler.handle(future);
+                                            }
                                         }
                                     });
                                 }
