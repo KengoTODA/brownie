@@ -14,7 +14,7 @@ import jp.skypencil.brownie.FileMetadata;
 /**
  * An implementation of {@link FileMetadataRegistry}, which stores data on memory.
  */
-public class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
+class FileMetadataRegistryOnMemory implements FileMetadataRegistry {
     private final ConcurrentMap<UUID, FileMetadata> data = new ConcurrentHashMap<>();
 
     @Override

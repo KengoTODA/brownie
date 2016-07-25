@@ -64,4 +64,24 @@ public abstract class FileMetadataRegistryTest {
             async.complete();
         });
     }
+
+    @Test
+    public void testIterate(TestContext context) {
+        FileMetadataRegistry registry = createRegistry();
+        Async async = context.async();
+        @FileId
+        UUID fileId = UUID.randomUUID();
+        FileMetadata metadata = new FileMetadata(fileId, "fileName",
+                MimeType.valueOf("text/plain"), 0, Instant.now());
+        registry.store(metadata, stored -> {
+            context.assertTrue(stored.succeeded());
+            registry.iterate(iterated -> {
+                context.assertTrue(iterated.succeeded());
+                iterated.result().endHandler(ended -> {
+                    async.complete();
+                }).handler(handled -> {
+                });
+            });
+        });
+    }
 }

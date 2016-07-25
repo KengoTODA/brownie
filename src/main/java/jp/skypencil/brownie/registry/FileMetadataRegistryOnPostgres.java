@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
 import io.vertx.core.AsyncResult;
@@ -19,11 +18,10 @@ import io.vertx.ext.asyncsql.PostgreSQLClient;
 import io.vertx.ext.sql.SQLConnection;
 import jp.skypencil.brownie.FileMetadata;
 
-@Component
 public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, AutoCloseable {
     private final AsyncSQLClient postgreSQLClient;
 
-    FileMetadataRegistryOnPostgres(String host, Vertx vertx) {
+    public FileMetadataRegistryOnPostgres(String host, Vertx vertx) {
         JsonObject postgreSQLClientConfig = new JsonObject()
                 .put("host", host)
                 .put("username", "brownie")
@@ -53,7 +51,7 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
                                         .stream()
                                         .map(json -> {
                                             UUID fileId = UUID.fromString(json.getString(0));
-                                            MimeType mimeType = new MimeType(json.getString(2));
+                                            MimeType mimeType = MimeType.valueOf(json.getString(2));
                                             Instant generated = Instant.parse(json.getString(4) + "Z");
                                             return new FileMetadata(fileId, json.getString(1), mimeType, json.getLong(3), generated);
                                         })

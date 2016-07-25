@@ -28,7 +28,7 @@ public final class Task {
         this(key, uploadedFileName, resolutions, Instant.now());
     }
 
-    Task(UUID key, String uploadedFileName, Set<String> resolutions, Instant registered) {
+    public Task(UUID key, String uploadedFileName, Set<String> resolutions, Instant registered) {
         this.key = Objects.requireNonNull(key);
         this.uploadedFileName = Objects.requireNonNull(uploadedFileName);
         this.resolutions = new HashSet<>(Objects.requireNonNull(resolutions));

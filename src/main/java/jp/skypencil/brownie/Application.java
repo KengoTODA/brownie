@@ -1,26 +1,29 @@
 package jp.skypencil.brownie;
 
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
-import io.vertx.core.dns.DnsClient;
-import io.vertx.core.spi.cluster.ClusterManager;
-import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
-
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import jp.skypencil.brownie.fs.MountedFileSystem;
-import jp.skypencil.brownie.fs.SharedFileSystem;
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.core.dns.DnsClient;
+import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+import jp.skypencil.brownie.fs.MountedFileSystem;
+import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
+import jp.skypencil.brownie.registry.TaskRegistry;
+import jp.skypencil.brownie.registry.TaskRegistryOnPostgres;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * An entry point to launch brownie server. To execute this class, simply run {@code java -jar}.
@@ -137,5 +140,15 @@ public class Application {
         }
         log.info("Initialized shared file system at {}", mountedDirectory);
         return new MountedFileSystem(mountedDirectory);
+    }
+
+    @Bean
+    public FileMetadataRegistry fileMetadataRegistry(Vertx vertx) {
+        return new FileMetadataRegistryOnPostgres("db", vertx);
+    }
+
+    @Bean
+    public TaskRegistry taskRegistry(Vertx vertx) {
+        return new TaskRegistryOnPostgres("db", vertx);
     }
 }
