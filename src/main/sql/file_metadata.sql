@@ -3,6 +3,6 @@ CREATE TABLE file_metadata (
   name text NOT NULL,
   mime_type text NOT NULL,
   content_length integer,
-  generated timestamp,
+  generated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );

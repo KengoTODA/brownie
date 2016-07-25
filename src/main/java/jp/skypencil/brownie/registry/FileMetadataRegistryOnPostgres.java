@@ -1,5 +1,6 @@
 package jp.skypencil.brownie.registry;
 
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,7 +52,8 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
                                         .map(json -> {
                                             UUID fileId = UUID.fromString(json.getString(0));
                                             MimeType mimeType = new MimeType(json.getString(2));
-                                            return new FileMetadata(fileId, json.getString(1), mimeType, json.getLong(3), json.getInstant(4));
+                                            Instant generated = Instant.parse(json.getString(4) + "Z");
+                                            return new FileMetadata(fileId, json.getString(1), mimeType, json.getLong(3), generated);
                                         })
                                         .iterator();
                                 future.complete(new FileMetadataReadStreamImpl(iterator));
@@ -157,11 +159,12 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
                                 future.fail(res.cause());
                             } else {
                                 Optional<FileMetadata> optional = res.result().getRows().stream().findFirst().map(jsonObject -> {
+                                    Instant generated = Instant.parse(jsonObject.getString("generated") + "Z");
                                     return new FileMetadata(fileId,
                                             jsonObject.getString("name"),
                                             MimeType.valueOf(jsonObject.getString("mime_type")),
                                             jsonObject.getLong("content_length"),
-                                            jsonObject.getInstant("generated"));
+                                            generated);
                                 });
                                 future.complete(optional);
                             }
@@ -186,21 +189,52 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
             }
             JsonArray param = new JsonArray().add(fileId.toString());
             SQLConnection con = ar.result();
-            con.queryWithParams("DELETE FROM file_metadata WHERE id = ?",
-                    param, res -> {
-                        try (SQLConnection connection = con) {
-                            if (res.failed()) {
-                                future.fail(res.cause());
-                            } else if (res.result().getNumRows() == 0) {
-                                future.fail("No record found");
-                            } else {
-                                future.complete();
+            con.setAutoCommit(false, result -> {
+                if (result.failed()) {
+                    future.fail(result.cause());
+                    return;
+                }
+                con.queryWithParams("SELECT * FROM file_metadata WHERE id = ? FOR UPDATE",
+                        param, selected -> {
+                    if (selected.failed()) {
+                        future.fail(selected.cause());
+                        con.rollback(rolled -> {
+                            if (handler != null) {
+                                handler.handle(future);
                             }
-                        }
-                        if (handler != null) {
-                            handler.handle(future);
-                        }
-                    });
+                        });
+                        return;
+                    }
+                    Integer count = selected.result().getResults().size();
+                    if (count == 0) {
+                        future.fail("No record found");
+                        con.rollback(rolled -> {
+                            if (handler != null) {
+                                handler.handle(future);
+                            }
+                        });
+                        return;
+                    }
+                    con.queryWithParams("DELETE FROM file_metadata WHERE id = ?",
+                            param, res -> {
+                                if (res.failed()) {
+                                    future.fail(res.cause());
+                                    con.rollback(rolled -> {
+                                        if (handler != null) {
+                                            handler.handle(future);
+                                        }
+                                    });
+                                } else {
+                                    future.complete();
+                                    con.commit(commit -> {
+                                        if (handler != null) {
+                                            handler.handle(future);
+                                        }
+                                    });
+                                }
+                            });
+                });
+            });
         });
     }
 
@@ -208,5 +242,4 @@ public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, Aut
     public void close() {
         this.postgreSQLClient.close();
     }
-
 }
