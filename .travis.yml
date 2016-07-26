@@ -2,20 +2,17 @@ language: java
 sudo: required
 services:
   - docker
-env:
-  - DOCKER_COMPOSE_VERSION: 1.8.0-rc2
 jdk:
   - oraclejdk8
-before_install:
+install:
   - npm install
-  - sudo rm /usr/local/bin/docker-compose
-  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-  - chmod +x docker-compose
-  - sudo mv docker-compose /usr/local/bin
-  - docker-compose up -d db
-after_install:
-  - docker-compose stop
-  - docker-compose rm -f
+  - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+before_script:
+  - docker run -d -p 15432:5432 -v "$(pwd)/src/main/sql:/docker-entrypoint-initdb.d" --name postgres -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
+script:
+  - mvn clean verify -Ddb.host=localhost -Ddb.port=15432
+after_script:
+  - docker stop postgres
 notifications:
   email:
     recipients:

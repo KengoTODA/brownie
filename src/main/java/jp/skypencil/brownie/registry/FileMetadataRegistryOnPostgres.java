@@ -21,13 +21,8 @@ import jp.skypencil.brownie.FileMetadata;
 public class FileMetadataRegistryOnPostgres implements FileMetadataRegistry, AutoCloseable {
     private final AsyncSQLClient postgreSQLClient;
 
-    public FileMetadataRegistryOnPostgres(String host, Vertx vertx) {
-        JsonObject postgreSQLClientConfig = new JsonObject()
-                .put("host", host)
-                .put("username", "brownie")
-                .put("password", "brownie")
-                .put("database", "brownie");
-        this.postgreSQLClient = PostgreSQLClient.createShared(vertx, postgreSQLClientConfig);
+    public FileMetadataRegistryOnPostgres(Vertx vertx, JsonObject config) {
+        this.postgreSQLClient = PostgreSQLClient.createShared(vertx, config);
     }
 
     @Override
