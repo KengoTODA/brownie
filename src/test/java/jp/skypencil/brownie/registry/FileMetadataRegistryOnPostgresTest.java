@@ -15,7 +15,7 @@ public class FileMetadataRegistryOnPostgresTest extends FileMetadataRegistryTest
     private JsonObject postgresConfig() {
         return new JsonObject()
                 .put("host", System.getProperty("db.host", "localhost"))
-                .put("port", System.getProperty("db.port", "5432"))
+                .put("port", Integer.valueOf(System.getProperty("db.port", "5432")))
                 .put("username", "brownie")
                 .put("password", "brownie")
                 .put("database", "brownie");
