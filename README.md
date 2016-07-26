@@ -30,6 +30,7 @@ $ java -DBROWNIE_MOUNTED_DIR=/tmp/brownie -DBROWNIE_CLUSTER_HOST="localhost" -ja
 or
 ```
 $ mvn clean package
+$ docker-compose build
 $ docker-compose up
 ```
 

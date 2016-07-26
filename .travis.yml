@@ -1,9 +1,18 @@
 language: java
-sudo: false
+sudo: required
+services:
+  - docker
 jdk:
   - oraclejdk8
-before_install:
+install:
   - npm install
+  - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+before_script:
+  - docker run -d -p 15432:5432 -v "$(pwd)/src/main/sql:/docker-entrypoint-initdb.d" --name postgres -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
+script:
+  - mvn clean verify -Ddb.host=localhost -Ddb.port=15432
+after_script:
+  - docker stop postgres
 notifications:
   email:
     recipients:
