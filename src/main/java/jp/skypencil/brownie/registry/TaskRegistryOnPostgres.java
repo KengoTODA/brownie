@@ -28,13 +28,8 @@ import jp.skypencil.brownie.Task;
 public class TaskRegistryOnPostgres implements TaskRegistry {
     private final AsyncSQLClient postgreSQLClient;
 
-    public TaskRegistryOnPostgres(String host, Vertx vertx) {
-        JsonObject postgreSQLClientConfig = new JsonObject()
-                .put("host", host)
-                .put("username", "brownie")
-                .put("password", "brownie")
-                .put("database", "brownie");
-        this.postgreSQLClient = PostgreSQLClient.createShared(vertx, postgreSQLClientConfig);
+    public TaskRegistryOnPostgres(Vertx vertx, JsonObject config) {
+        this.postgreSQLClient = PostgreSQLClient.createShared(vertx, config);
     }
 
     @Override

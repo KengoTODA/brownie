@@ -15,6 +15,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.DnsClient;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import jp.skypencil.brownie.fs.MountedFileSystem;
@@ -144,11 +145,20 @@ public class Application {
 
     @Bean
     public FileMetadataRegistry fileMetadataRegistry(Vertx vertx) {
-        return new FileMetadataRegistryOnPostgres("db", vertx);
+        return new FileMetadataRegistryOnPostgres(vertx, postgresConfig());
     }
 
     @Bean
     public TaskRegistry taskRegistry(Vertx vertx) {
-        return new TaskRegistryOnPostgres("db", vertx);
+        return new TaskRegistryOnPostgres(vertx, postgresConfig());
+    }
+
+    private JsonObject postgresConfig() {
+        return new JsonObject()
+                .put("host", System.getProperty("db.host", "localhost"))
+                .put("port", System.getProperty("db.port", "5432"))
+                .put("username", "brownie")
+                .put("password", "brownie")
+                .put("database", "brownie");
     }
 }
