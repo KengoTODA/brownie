@@ -22,8 +22,8 @@ import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
-import jp.skypencil.brownie.registry.TaskRegistry;
-import jp.skypencil.brownie.registry.TaskRegistryOnPostgres;
+import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.registry.ObservableTaskRegistryOnPostgres;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -149,8 +149,8 @@ public class Application {
     }
 
     @Bean
-    public TaskRegistry taskRegistry(Vertx vertx) {
-        return new TaskRegistryOnPostgres(vertx, postgresConfig());
+    public ObservableTaskRegistry taskRegistry(Vertx vertx) {
+        return new ObservableTaskRegistryOnPostgres(io.vertx.rxjava.core.Vertx.newInstance(vertx), postgresConfig());
     }
 
     private JsonObject postgresConfig() {

@@ -1,16 +1,5 @@
 package jp.skypencil.brownie;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.streams.ReadStream;
-import io.vertx.ext.web.FileUpload;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.StaticHandler;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,16 +14,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-
-import jp.skypencil.brownie.registry.FileMetadataReadStream;
-import jp.skypencil.brownie.registry.FileMetadataRegistry;
-import jp.skypencil.brownie.registry.TaskRegistry;
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.FileUpload;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.StaticHandler;
+import jp.skypencil.brownie.registry.FileMetadataReadStream;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import lombok.extern.slf4j.Slf4j;
 
 
 
@@ -62,7 +61,7 @@ public class FrontendServer {
     private FileTransporter fileTransporter;
 
     @Resource
-    private TaskRegistry taskRegistry;
+    private ObservableTaskRegistry taskRegistry;
 
     @Resource
     private FileMetadataRegistry fileMetadataRegistry;
@@ -119,18 +118,16 @@ public class FrontendServer {
                             .end("Internal server error");
                         return;
                     }
-                    taskRegistry.store(task, taskStored -> {
-                        if (taskStored.failed()) {
-                            log.warn("Failed to store task to registry", stored.cause());
-                            response
-                                .setStatusCode(500)
-                                .end("Internal server error");
-                            return;
-                        }
+                    taskRegistry.store(task).doOnCompleted(() -> {
                         vertx.eventBus().send("file-uploaded", task);
                         if (countDown.decrementAndGet() == 0) {
                             response.end("registered");
                         }
+                    }).doOnError(error -> {
+                        log.warn("Failed to store task to registry", error);
+                        response
+                            .setStatusCode(500)
+                            .end("Internal server error");
                     });
                 });
             });
@@ -151,22 +148,18 @@ public class FrontendServer {
                     .setChunked(true)
                     .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
                 StringBuilder responseBody = new StringBuilder("[");
-                taskRegistry.iterate(loaded -> {
-                    if (loaded.failed()) {
-                        response
-                            .setStatusCode(500)
-                            .end("Failed to load tasks");
-                        return;
+                taskRegistry.iterate().subscribe(task -> {
+                    if (responseBody.length() != 1) {
+                        responseBody.append(",");
                     }
-                    ReadStream<Task> stream = loaded.result();
-                    stream.endHandler(ended -> {
-                        response.end(responseBody.append("]").toString());
-                    }).handler(task -> {
-                        if (responseBody.length() != 1) {
-                            responseBody.append(",");
-                        }
-                        responseBody.append(task.toJson());
-                    });
+                    responseBody.append(task.toJson());
+                }, error -> {
+                    log.warn("Failed to load tasks", error);
+                    response
+                    .setStatusCode(500)
+                    .end("Failed to load tasks");
+                }, () -> {
+                    response.end(responseBody.append("]").toString());
                 });
         });
         return subRouter;
@@ -247,5 +240,10 @@ public class FrontendServer {
                 responseBody.append(metadata.toJson());
             });
         });
+    }
+
+    @PreDestroy
+    public void close() {
+        taskRegistry.close();
     }
 }
