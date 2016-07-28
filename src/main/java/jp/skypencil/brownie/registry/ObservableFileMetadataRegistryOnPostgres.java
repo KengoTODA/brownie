@@ -87,7 +87,8 @@ public class ObservableFileMetadataRegistryOnPostgres
                         .add(metadata.getContentLength())
                         .add(metadata.getGenerated())
                         .add(metadata.getFileId());
-                return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params);
+                return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params)
+                        .doAfterTerminate(con::close);
             }).ofType(Void.class);
     }
 

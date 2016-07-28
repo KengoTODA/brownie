@@ -22,6 +22,8 @@ import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
+import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
+import jp.skypencil.brownie.registry.ObservableFileMetadataRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistryOnPostgres;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,12 @@ public class Application {
 
     @Value("${BROWNIE_DNS_PORT:53}")
     private int dnsPort;
+
+    @Value("${BROWNIE_POSTGRES_HOST:'localhost'}")
+    private String postgresHost;
+
+    @Value("${BROWNIE_POSTGRES_PORT:5432}")
+    private int postgresPort;
 
     private Future<Vertx> vertxFuture;
 
@@ -122,6 +130,11 @@ public class Application {
         return vertx;
     }
 
+    @Bean
+    public io.vertx.rxjava.core.Vertx rxJavaVertx(Vertx vertx) {
+        return io.vertx.rxjava.core.Vertx.newInstance(vertx);
+    }
+
     /**
      * Generate {@link DnsClient} instance, to resolve SRV record for service discovery.
      *
@@ -149,14 +162,19 @@ public class Application {
     }
 
     @Bean
-    public ObservableTaskRegistry taskRegistry(Vertx vertx) {
-        return new ObservableTaskRegistryOnPostgres(io.vertx.rxjava.core.Vertx.newInstance(vertx), postgresConfig());
+    public ObservableTaskRegistry taskRegistry(io.vertx.rxjava.core.Vertx vertx) {
+        return new ObservableTaskRegistryOnPostgres(vertx, postgresConfig());
+    }
+
+    @Bean
+    public ObservableFileMetadataRegistry observableFileMetadataRegistry(io.vertx.rxjava.core.Vertx vertx) {
+        return new ObservableFileMetadataRegistryOnPostgres(vertx, postgresConfig());
     }
 
     private JsonObject postgresConfig() {
         return new JsonObject()
-                .put("host", System.getProperty("db.host", "localhost"))
-                .put("port", Integer.valueOf(System.getProperty("db.port", "5432")))
+                .put("host", postgresHost)
+                .put("port", postgresPort)
                 .put("username", "brownie")
                 .put("password", "brownie")
                 .put("database", "brownie");

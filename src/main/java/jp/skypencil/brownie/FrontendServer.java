@@ -6,7 +6,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,8 +29,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
-import jp.skypencil.brownie.registry.FileMetadataReadStream;
-import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,10 +59,10 @@ public class FrontendServer {
     private FileTransporter fileTransporter;
 
     @Resource
-    private ObservableTaskRegistry taskRegistry;
+    private ObservableTaskRegistry observableTaskRegistry;
 
     @Resource
-    private FileMetadataRegistry fileMetadataRegistry;
+    private ObservableFileMetadataRegistry observableFileMetadataRegistry;
 
     @Resource
     private KeyGenerator keyGenerator;
@@ -118,7 +116,7 @@ public class FrontendServer {
                             .end("Internal server error");
                         return;
                     }
-                    taskRegistry.store(task).doOnCompleted(() -> {
+                    observableTaskRegistry.store(task).doOnCompleted(() -> {
                         vertx.eventBus().send("file-uploaded", task);
                         if (countDown.decrementAndGet() == 0) {
                             response.end("registered");
@@ -128,7 +126,7 @@ public class FrontendServer {
                         response
                             .setStatusCode(500)
                             .end("Internal server error");
-                    });
+                    }).subscribe();
                 });
             });
         });
@@ -148,7 +146,7 @@ public class FrontendServer {
                     .setChunked(true)
                     .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
                 StringBuilder responseBody = new StringBuilder("[");
-                taskRegistry.iterate().subscribe(task -> {
+                observableTaskRegistry.iterate().subscribe(task -> {
                     if (responseBody.length() != 1) {
                         responseBody.append(",");
                     }
@@ -194,23 +192,19 @@ public class FrontendServer {
     private void downloadFile(RoutingContext ctx, String fileId) {
         UUID key = UUID.fromString(fileId);
         HttpServerResponse response = ctx.response();
-        fileMetadataRegistry.load(key, loaded -> {
-            if (loaded.succeeded()) {
-                Optional<FileMetadata> metadata = loaded.result();
-                if (metadata.isPresent()) {
-                    long contentLength = metadata.get().getContentLength();
-                    response.putHeader("Content-Length", Long.toString(contentLength));
-                    fileTransporter.downloadToPipe(key, response, downloaded -> {
-                        if (downloaded.failed()) {
-                            log.error("Failed to download file", downloaded.cause());
-                            response.setStatusCode(500).end("Failed to load file");
-                            return;
-                        }
-                        response.end();
-                    });
+        observableFileMetadataRegistry.load(key).subscribe(metadata -> {
+            long contentLength = metadata.getContentLength();
+            response.putHeader("Content-Length", Long.toString(contentLength));
+            fileTransporter.downloadToPipe(key, response, downloaded -> {
+                if (downloaded.failed()) {
+                    log.error("Failed to download file", downloaded.cause());
+                    response.setStatusCode(500).end("Failed to load file");
                     return;
                 }
-            }
+                response.end();
+            });
+        }, error -> {
+            log.error("Failed to download file", error);
             response.setStatusCode(500).end("Failed to load file");
         });
     }
@@ -220,30 +214,24 @@ public class FrontendServer {
             .setChunked(true)
             .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         StringBuilder responseBody = new StringBuilder("[");
-        fileMetadataRegistry.iterate(loaded -> {
-            if (loaded.failed()) {
-                response
-                    .setStatusCode(500)
-                    .end("Failed to load files");
-                return;
+        observableFileMetadataRegistry.iterate().subscribe(metadata -> {
+            if (responseBody.length() != 1) {
+                responseBody.append(",");
             }
-            FileMetadataReadStream stream = loaded.result();
-            stream.endHandler(ended -> {
-                stream.close();
-                response.end(responseBody.append("]").toString());
-            }).exceptionHandler(throwable -> {
-                stream.close();
-            }).handler(metadata -> {
-                if (responseBody.length() != 1) {
-                    responseBody.append(",");
-                }
-                responseBody.append(metadata.toJson());
-            });
+            responseBody.append(metadata.toJson());
+        }, error -> {
+            log.error("Failed to load files", error);
+            response
+                .setStatusCode(500)
+                .end("Failed to load files");
+        }, () -> {
+            response.end(responseBody.append("]").toString());
         });
     }
 
     @PreDestroy
     public void close() {
-        taskRegistry.close();
+        observableTaskRegistry.close();
+        observableFileMetadataRegistry.close();
     }
 }

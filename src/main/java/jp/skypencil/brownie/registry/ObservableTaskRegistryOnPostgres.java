@@ -33,6 +33,7 @@ public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry 
             Iterable<Task> iterable = selected.getResults().stream()
                     .map(json -> {
                         UUID id = UUID.fromString(json.getString(0));
+                        json.remove(0);
                         return taskFrom(id, json);
                     }).collect(Collectors.toList());
             return Observable.from(iterable);
@@ -40,7 +41,7 @@ public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry 
     }
 
     @Override
-    public Observable<Void> store(Task task) {
+    public Observable<Object> store(Task task) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
                 JsonArray params = new JsonArray()
@@ -50,7 +51,7 @@ public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry 
                         .add(task.getRegistered());
                 return con.queryWithParamsObservable("INSERT INTO task (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", params)
                         .doAfterTerminate(con::close);
-            }).ofType(Void.class);
+            });
     }
 
     @Override
@@ -72,9 +73,9 @@ public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry 
     }
 
     private Task taskFrom(UUID taskId, JsonArray json) {
-        String name = json.getString(1);
-        Set<String> resolutions = new HashSet<>(Arrays.asList(json.getString(2).split(",")));
-        Instant generated = Instant.parse(json.getString(3) + "Z");
+        String name = json.getString(0);
+        Set<String> resolutions = new HashSet<>(Arrays.asList(json.getString(1).split(",")));
+        Instant generated = Instant.parse(json.getString(2) + "Z");
         return new Task(taskId, name, resolutions, generated);
     }
 

@@ -26,7 +26,7 @@ public interface ObservableTaskRegistry extends AutoCloseable {
      *      Task to register
      */
     @Nonnull
-    Observable<Void> store(Task task);
+    Observable<Object> store(Task task);
 
     /**
      * Load a {@link Task} from registry.
