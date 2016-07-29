@@ -20,8 +20,8 @@ import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
-import jp.skypencil.brownie.fs.MountedFileSystem;
-import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.fs.ObservableMountedFileSystem;
+import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
@@ -149,13 +149,13 @@ public class Application {
     }
 
     @Bean
-    public SharedFileSystem sharedFileSystem() {
+    public ObservableSharedFileSystem sharedFileSystem() {
         File directory = new File(mountedDirectory);
         if (!directory.isDirectory()) {
             throw new IllegalStateException("Specified directory does not exist: " + mountedDirectory);
         }
         log.info("Initialized shared file system at {}", mountedDirectory);
-        return new MountedFileSystem(mountedDirectory);
+        return new ObservableMountedFileSystem(mountedDirectory);
     }
 
     @Bean
