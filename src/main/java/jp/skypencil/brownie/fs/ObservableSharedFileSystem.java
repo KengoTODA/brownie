@@ -6,12 +6,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import io.vertx.rxjava.core.buffer.Buffer;
 import jp.skypencil.brownie.FileMetadata;
-import jp.skypencil.brownie.FileTransporter;
+import jp.skypencil.brownie.ObservableFileTransporter;
 import rx.Observable;
 
 /**
  * Interface to handle files on shared file system.
- * Service code should use {@link FileTransporter} instead of this interface, to update {@link FileMetadata} at the same time.
+ * Service code should use {@link ObservableFileTransporter} instead of this interface, to update {@link FileMetadata} at the same time.
  */
 @ParametersAreNonnullByDefault
 public interface ObservableSharedFileSystem {
