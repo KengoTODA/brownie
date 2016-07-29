@@ -5,15 +5,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
 import javax.annotation.WillNotClose;
 
 import org.springframework.util.MimeType;
 
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
-import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.rxjava.ext.sql.SQLConnection;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
@@ -21,11 +19,8 @@ import rx.Observable;
 
 public class ObservableFileMetadataRegistryOnPostgres
         implements ObservableFileMetadataRegistry {
-    private final AsyncSQLClient postgreSQLClient;
-
-    public ObservableFileMetadataRegistryOnPostgres(Vertx vertx, JsonObject config) {
-        this.postgreSQLClient = PostgreSQLClient.createShared(vertx, config);
-    }
+    @Resource
+    private AsyncSQLClient postgreSQLClient;
 
     @Override
     public Observable<FileMetadata> iterate() {

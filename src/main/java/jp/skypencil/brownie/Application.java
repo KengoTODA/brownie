@@ -17,6 +17,8 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.DnsClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
+import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
@@ -162,13 +164,18 @@ public class Application {
     }
 
     @Bean
+    public AsyncSQLClient asyncSqlClient(io.vertx.rxjava.core.Vertx vertx) {
+        return PostgreSQLClient.createShared(vertx, postgresConfig());
+    }
+
+    @Bean
     public ObservableTaskRegistry taskRegistry(io.vertx.rxjava.core.Vertx vertx) {
-        return new ObservableTaskRegistryOnPostgres(vertx, postgresConfig());
+        return new ObservableTaskRegistryOnPostgres();
     }
 
     @Bean
     public ObservableFileMetadataRegistry observableFileMetadataRegistry(io.vertx.rxjava.core.Vertx vertx) {
-        return new ObservableFileMetadataRegistryOnPostgres(vertx, postgresConfig());
+        return new ObservableFileMetadataRegistryOnPostgres();
     }
 
     private JsonObject postgresConfig() {

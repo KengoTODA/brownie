@@ -8,20 +8,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
+
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
-import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import jp.skypencil.brownie.Task;
 import rx.Observable;
 
 public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry {
-    private final AsyncSQLClient postgreSQLClient;
-
-    public ObservableTaskRegistryOnPostgres(Vertx vertx, JsonObject config) {
-        this.postgreSQLClient = PostgreSQLClient.createShared(vertx, config);
-    }
+    @Resource
+    private AsyncSQLClient postgreSQLClient;
 
     @Override
     public Observable<Task> iterate() {
