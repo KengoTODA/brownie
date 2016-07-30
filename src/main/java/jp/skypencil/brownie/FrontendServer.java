@@ -20,15 +20,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.FileUpload;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.http.HttpServerResponse;
+import io.vertx.rxjava.ext.web.FileUpload;
+import io.vertx.rxjava.ext.web.Router;
+import io.vertx.rxjava.ext.web.RoutingContext;
+import io.vertx.rxjava.ext.web.handler.BodyHandler;
+import io.vertx.rxjava.ext.web.handler.StaticHandler;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -52,11 +51,12 @@ public class FrontendServer {
      * Directory to store uploaded file.
      */
     private final String directory = createDirectory();
-    @Resource
-    private Vertx vertx;
 
     @Resource
-    private FileTransporter fileTransporter;
+    private Vertx rxJavaVertx;
+
+    @Resource
+    private ObservableFileTransporter fileTransporter;
 
     @Resource
     private ObservableTaskRegistry observableTaskRegistry;
@@ -91,13 +91,13 @@ public class FrontendServer {
      */
     @PostConstruct
     public void createServer(){
-        Router router = Router.router(vertx);
+        Router router = Router.router(rxJavaVertx);
 
         // Serve the form handling part
         router.route("/form").handler(BodyHandler.create().setUploadsDirectory(directory));
         router.post("/form").handler(ctx -> {
             HttpServerResponse response = ctx.response()
-                    .putHeader(HttpHeaders.CONTENT_TYPE, "text/plain");
+                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "text/plain");
             Set<FileUpload> uploadedFiles = ctx.fileUploads();
             if (uploadedFiles.isEmpty()) {
                 response.end("No file uploaded");
@@ -108,16 +108,15 @@ public class FrontendServer {
                 Task task = new Task(keyGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
                 File file = new File(fileUpload.uploadedFileName());
                 MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
-                fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType, stored -> {
-                    if (stored.failed()) {
-                        log.warn("Failed to store file onto file system", stored.cause());
-                        response
-                            .setStatusCode(500)
-                            .end("Internal server error");
-                        return;
-                    }
-                    observableTaskRegistry.store(task).doOnCompleted(() -> {
-                        vertx.eventBus().send("file-uploaded", task);
+                fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType)
+                .doOnError(error -> {
+                    log.warn("Failed to store file onto file system", error);
+                    response
+                        .setStatusCode(500)
+                        .end("Internal server error");
+                }).flatMap(v -> {
+                    return observableTaskRegistry.store(task).doOnCompleted(() -> {
+                        rxJavaVertx.eventBus().send("file-uploaded", task);
                         if (countDown.decrementAndGet() == 0) {
                             response.end("registered");
                         }
@@ -126,8 +125,8 @@ public class FrontendServer {
                         response
                             .setStatusCode(500)
                             .end("Internal server error");
-                    }).subscribe();
-                });
+                    });
+                }).subscribe();
             });
         });
         router.mountSubRouter("/tasks", createRouterForTaskApi());
@@ -135,16 +134,16 @@ public class FrontendServer {
         // Serve the static pages
         router.route().handler(StaticHandler.create());
 
-        vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
+        rxJavaVertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
         log.info("HTTP server is listening {} port", httpPort);
     }
 
     private Router createRouterForTaskApi() {
-        Router subRouter = Router.router(vertx);
+        Router subRouter = Router.router(rxJavaVertx);
         subRouter.route().handler(ctx -> {
             HttpServerResponse response = ctx.response()
                     .setChunked(true)
-                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
                 StringBuilder responseBody = new StringBuilder("[");
                 observableTaskRegistry.iterate().subscribe(task -> {
                     if (responseBody.length() != 1) {
@@ -164,7 +163,7 @@ public class FrontendServer {
     }
 
     private Router createRouterForFileApi() {
-        Router subRouter = Router.router(vertx);
+        Router subRouter = Router.router(rxJavaVertx);
         subRouter.get("/").handler(this::generateFileList);
         subRouter.get("/:fileId").handler(ctx -> {
             String fileId = ctx.request().getParam("fileId");
@@ -178,41 +177,36 @@ public class FrontendServer {
     }
 
     private void deleteFile(RoutingContext ctx, String fileId) {
-        HttpServerResponse response = ctx.response();
+        io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
         UUID key = UUID.fromString(fileId);
-        fileTransporter.delete(key, deleted -> {
-            if (deleted.succeeded()) {
-                response.end("deleted");
-            } else {
-                response.setStatusCode(500).end("Failed to load file");
-            }
-        });
+        fileTransporter.delete(key).subscribe(next -> {},
+                error -> {
+                    response.setStatusCode(500).end("Failed to load file");
+                },
+                () -> {
+                    response.end("deleted");
+                });
     }
 
     private void downloadFile(RoutingContext ctx, String fileId) {
         UUID key = UUID.fromString(fileId);
-        HttpServerResponse response = ctx.response();
+        io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
         observableFileMetadataRegistry.load(key).subscribe(metadata -> {
             long contentLength = metadata.getContentLength();
             response.putHeader("Content-Length", Long.toString(contentLength));
-            fileTransporter.downloadToPipe(key, response, downloaded -> {
-                if (downloaded.failed()) {
-                    log.error("Failed to download file", downloaded.cause());
-                    response.setStatusCode(500).end("Failed to load file");
-                    return;
-                }
-                response.end();
+            fileTransporter.download(key).subscribe(downloaded -> {
+                response.sendFile(downloaded.getAbsolutePath());
+            }, error -> {
+                log.error("Failed to download file", error);
+                response.setStatusCode(500).end("Failed to load file");
             });
-        }, error -> {
-            log.error("Failed to download file", error);
-            response.setStatusCode(500).end("Failed to load file");
         });
     }
 
     private void generateFileList(RoutingContext ctx) {
-        HttpServerResponse response = ctx.response()
+         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response()
             .setChunked(true)
-            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
         StringBuilder responseBody = new StringBuilder("[");
         observableFileMetadataRegistry.iterate().subscribe(metadata -> {
             if (responseBody.length() != 1) {

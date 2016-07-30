@@ -15,23 +15,23 @@ public class ObservableMountedFileSystem implements ObservableSharedFileSystem {
     private final String baseDir;
 
     @Resource
-    Vertx vertx;
+    Vertx rxJavaVertx;
 
     @Override
     public Observable<Buffer> load(UUID key) {
         String path = baseDir + "/" + Objects.requireNonNull(key);
-        return vertx.fileSystem().readFileObservable(path);
+        return rxJavaVertx.fileSystem().readFileObservable(path);
     }
 
     @Override
     public Observable<Void> store(UUID key, Buffer buffer) {
         String path = baseDir + "/" + Objects.requireNonNull(key);
-        return vertx.fileSystem().writeFileObservable(path, buffer);
+        return rxJavaVertx.fileSystem().writeFileObservable(path, buffer);
     }
 
     @Override
     public Observable<Void> delete(UUID key) {
         String path = baseDir + "/" + Objects.requireNonNull(key);
-        return vertx.fileSystem().deleteObservable(path);
+        return rxJavaVertx.fileSystem().deleteObservable(path);
     }
 }

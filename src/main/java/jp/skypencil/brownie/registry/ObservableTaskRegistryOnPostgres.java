@@ -13,8 +13,13 @@ import javax.annotation.Resource;
 import io.vertx.core.json.JsonArray;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import jp.skypencil.brownie.Task;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import rx.Observable;
 
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for test
 public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry {
     @Resource
     private AsyncSQLClient postgreSQLClient;

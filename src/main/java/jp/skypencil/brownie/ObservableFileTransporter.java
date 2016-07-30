@@ -17,27 +17,32 @@ import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.file.AsyncFile;
 import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import rx.Observable;
 
 @Component
 @ParametersAreNonnullByDefault
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for unit test
 public class ObservableFileTransporter {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
     @Resource
-    private Vertx vertx;
+    private Vertx rxJavaVertx;
 
     @Resource
-    private ObservableSharedFileSystem fileSystem;
+    private ObservableSharedFileSystem observableFileSystem;
 
     @Resource
-    private ObservableFileMetadataRegistry fileMetadataRegistry;
+    private ObservableFileMetadataRegistry observableFileMetadataRegistry;
 
     /**
      * Download a file from shared file system, and store it to local file system.
      */
     Observable<File> download(UUID key) {
-        return store(fileSystem.load(key));
+        return store(observableFileSystem.load(key));
     }
 
     /**
@@ -45,16 +50,17 @@ public class ObservableFileTransporter {
      */
     private Observable<File> store(Observable<Buffer> data) {
         String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
-        return vertx.fileSystem()
+        return rxJavaVertx.fileSystem()
             .openObservable(downloadedFile, new OpenOptions().setWrite(true))
             .flatMap(opened -> {
                 CompletableFuture<File> future = new CompletableFuture<>();
-                data.doAfterTerminate(opened::close)
-                    .subscribe(buffer -> {
+                data.subscribe(buffer -> {
                         opened.write(buffer);
                     }, error -> {
+                        opened.close();
                         future.completeExceptionally(error);
                     }, () -> {
+                        opened.close();
                         future.complete(new File(downloadedFile));
                     });
                 return Observable.from(future);
@@ -62,23 +68,23 @@ public class ObservableFileTransporter {
     }
 
     Observable<Void> upload(UUID key, String name, File file, MimeType mimeType) {
-        return vertx.fileSystem().openObservable(file.getAbsolutePath(),
+        return rxJavaVertx.fileSystem().openObservable(file.getAbsolutePath(),
                 new OpenOptions().setRead(true))
         .flatMap(AsyncFile::toObservable)
         .reduce(Buffer.buffer(), (reduced, buffer) -> {
             return reduced.appendBuffer(buffer);
         })
         .flatMap(reducedBuffer -> {
-            return fileSystem.store(key, reducedBuffer);
+            return observableFileSystem.store(key, reducedBuffer);
         }).flatMap(v -> {
             FileMetadata metadata = new FileMetadata(key, name, mimeType, file.length(), Instant.now());
-            return fileMetadataRegistry.store(metadata);
+            return observableFileMetadataRegistry.store(metadata);
         });
     }
 
     Observable<Void> delete(UUID key) {
-        return fileMetadataRegistry.delete(key).flatMap(v -> {
-            return fileSystem.delete(key);
+        return observableFileMetadataRegistry.delete(key).flatMap(v -> {
+            return observableFileSystem.delete(key);
         });
     }
 }

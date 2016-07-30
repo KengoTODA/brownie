@@ -1,10 +1,5 @@
 package jp.skypencil.brownie;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
@@ -12,16 +7,17 @@ import java.util.Objects;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.stereotype.Component;
 
 /**
  * An {@link FileEncoder} implementation which depends on FFmpeg.
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
-@Component
 @Slf4j
 @ParametersAreNonnullByDefault
 public class FileEncoderFFmpeg implements FileEncoder {

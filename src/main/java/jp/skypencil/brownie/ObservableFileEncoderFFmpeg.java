@@ -25,7 +25,7 @@ import rx.Observable;
 @ParametersAreNonnullByDefault
 public class ObservableFileEncoderFFmpeg implements ObservableFileEncoder {
     @Resource
-    private Vertx vertx;
+    private Vertx rxJavaVertx;
 
     @Resource
     private ObservableSharedFileSystem fileSystem;
@@ -35,7 +35,7 @@ public class ObservableFileEncoderFFmpeg implements ObservableFileEncoder {
         Objects.requireNonNull(targetFile);
         Objects.requireNonNull(resolution);
         final int processors = Runtime.getRuntime().availableProcessors();
-        return vertx.executeBlockingObservable(
+        return rxJavaVertx.executeBlockingObservable(
                 convert(targetFile, resolution, processors));
     }
 

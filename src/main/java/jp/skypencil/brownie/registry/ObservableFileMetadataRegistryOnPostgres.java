@@ -50,18 +50,18 @@ public class ObservableFileMetadataRegistryOnPostgres
     }
 
     private Observable<Void> storeInternal(@WillNotClose SQLConnection con, FileMetadata metadata) {
-        return con.setAutoCommitObservable(true)
+        return con.setAutoCommitObservable(false)
                 .flatMap(v -> {
                     return con.queryWithParamsObservable(
-                            "SELECT 1 FROM file_metadata where id = ?",
-                            new JsonArray().add(metadata.getFileId()));
+                            "SELECT 1 FROM file_metadata where id = ? FOR UPDATE",
+                            new JsonArray().add(metadata.getFileId().toString()));
                 })
                 .flatMap(rs -> {
                     if (rs.getResults().isEmpty()) {
                         JsonArray params = new JsonArray()
-                                .add(metadata.getFileId())
+                                .add(metadata.getFileId().toString())
                                 .add(metadata.getName())
-                                .add(metadata.getMimeType())
+                                .add(metadata.getMimeType().toString())
                                 .add(metadata.getContentLength())
                                 .add(metadata.getGenerated());
                         return con.updateWithParamsObservable("INSERT INTO file_metadata (id, name, mime_type, content_length, generated) VALUES (?, ?, ?, ?, ?)", params);
@@ -69,7 +69,9 @@ public class ObservableFileMetadataRegistryOnPostgres
                         return Observable.error(
                                 new IllegalArgumentException("FileMetadata already exists: fileId = " + metadata.getFileId()));
                     }
-                }).ofType(Void.class);
+                }).flatMap(ur-> {
+                    return con.commitObservable();
+                });
     }
 
     @Override
@@ -78,13 +80,15 @@ public class ObservableFileMetadataRegistryOnPostgres
             .flatMap(con -> {
                 JsonArray params = new JsonArray()
                         .add(metadata.getName())
-                        .add(metadata.getMimeType())
+                        .add(metadata.getMimeType().toString())
                         .add(metadata.getContentLength())
                         .add(metadata.getGenerated())
-                        .add(metadata.getFileId());
+                        .add(metadata.getFileId().toString());
                 return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params)
                         .doAfterTerminate(con::close);
-            }).ofType(Void.class);
+            }).flatMap(ur -> {
+                return null;
+            });
     }
 
     @Override
