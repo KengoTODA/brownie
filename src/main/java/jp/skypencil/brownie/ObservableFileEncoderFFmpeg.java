@@ -7,36 +7,36 @@ import java.util.Objects;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
+import org.springframework.stereotype.Component;
+
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import jp.skypencil.brownie.fs.SharedFileSystem;
+import io.vertx.rxjava.core.Future;
+import io.vertx.rxjava.core.Vertx;
+import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
 import lombok.extern.slf4j.Slf4j;
+import rx.Observable;
 
 /**
- * An {@link FileEncoder} implementation which depends on FFmpeg.
+ * An {@link ObservableFileEncoder} implementation which depends on FFmpeg.
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
+@Component
 @Slf4j
 @ParametersAreNonnullByDefault
-public class FileEncoderFFmpeg implements FileEncoder {
+public class ObservableFileEncoderFFmpeg implements ObservableFileEncoder {
     @Resource
-    private Vertx vertx;
+    private Vertx rxJavaVertx;
 
     @Resource
-    private SharedFileSystem fileSystem;
+    private ObservableSharedFileSystem fileSystem;
 
     @Override
-    public void convert(File targetFile, String resolution, Handler<AsyncResult<File>> handler) {
+    public Observable<File> convert(File targetFile, String resolution) {
         Objects.requireNonNull(targetFile);
         Objects.requireNonNull(resolution);
-        Objects.requireNonNull(handler);
         final int processors = Runtime.getRuntime().availableProcessors();
-        vertx.executeBlocking(
-                convert(targetFile, resolution, processors),
-                true,
-                handler);
+        return rxJavaVertx.executeBlockingObservable(
+                convert(targetFile, resolution, processors));
     }
 
     private Handler<Future<File>> convert(File targetFile,

@@ -57,6 +57,8 @@ services:
       - BROWNIE_DNS_HOST=consul
       - BROWNIE_DNS_PORT=8600
       - BROWNIE_MOUNTED_DIR=/mnt/brownie
+      - BROWNIE_POSTGRES_HOST=db
+      - BROWNIE_POSTGRES_PORT=5432
       - VIRTUAL_HOST=front.service.consul
       - VIRTUAL_PORT=8080
   db:
