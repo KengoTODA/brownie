@@ -65,6 +65,8 @@ public class Application {
 
     private Vertx vertx;
 
+    private AsyncSQLClient asyncSqlClient;
+
     public static void main(String[] args) {
         // specify logging framework
         // http://vertx.io/docs/vertx-core/java/#_logging
@@ -109,7 +111,12 @@ public class Application {
 
     @PreDestroy
     public void cleanUp() {
-        if (vertx != null) {
+        if (asyncSqlClient != null) {
+            assert vertx != null;
+            asyncSqlClient.close(ar -> {
+                vertx.close();
+            });
+        } else if (vertx != null) {
             vertx.close();
         }
     }
@@ -165,7 +172,8 @@ public class Application {
 
     @Bean
     public AsyncSQLClient asyncSqlClient(io.vertx.rxjava.core.Vertx vertx) {
-        return PostgreSQLClient.createShared(vertx, postgresConfig());
+        asyncSqlClient = PostgreSQLClient.createShared(vertx, postgresConfig());
+        return asyncSqlClient;
     }
 
     @Bean

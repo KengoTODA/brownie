@@ -59,9 +59,4 @@ public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry 
                 return result;
             });
     }
-
-    @Override
-    public void close() {
-        postgreSQLClient.close();
-    }
 }

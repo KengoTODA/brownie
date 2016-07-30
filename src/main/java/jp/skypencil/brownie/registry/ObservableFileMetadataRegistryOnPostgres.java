@@ -127,10 +127,4 @@ public class ObservableFileMetadataRegistryOnPostgres
                     return null;
                 });
     }
-
-    @Override
-    public void close() {
-        postgreSQLClient.close();
-    }
-
 }

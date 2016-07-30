@@ -14,6 +14,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import jp.skypencil.brownie.Task;
 import rx.Observable;
@@ -21,22 +22,26 @@ import rx.Observable;
 @RunWith(VertxUnitRunner.class)
 public class ObservableTaskRegistryOnPostgresTest {
     private Vertx vertx;
+    private AsyncSQLClient client;
 
     @Before
     public final void setUp() {
         vertx = Vertx.vertx();
+        client = PostgreSQLClient.createShared(vertx, createConfig());
     }
 
     @After
     public final void cleanUp(TestContext context) {
-        vertx.close(context.asyncAssertSuccess());
+        client.close(ar -> {
+            vertx.close(context.asyncAssertSuccess());
+        });
     }
 
     @Test
     public void testStore(TestContext context) {
         Async async = context.async();
 
-        ObservableTaskRegistryOnPostgres registry = new ObservableTaskRegistryOnPostgres(PostgreSQLClient.createShared(vertx, createConfig()));
+        ObservableTaskRegistryOnPostgres registry = new ObservableTaskRegistryOnPostgres(client);
 
         UUID taskId = UUID.randomUUID();
         Task task = new Task(taskId, "name", Collections.singleton("vga"), Instant.now());
@@ -45,7 +50,6 @@ public class ObservableTaskRegistryOnPostgresTest {
         })
         .subscribe(loaded -> {
             context.assertEquals(loaded.get(), task);
-            registry.close();
             async.complete();
         });
     }
@@ -54,7 +58,7 @@ public class ObservableTaskRegistryOnPostgresTest {
     public void testIterate(TestContext context) {
         Async async = context.async();
 
-        ObservableTaskRegistryOnPostgres registry = new ObservableTaskRegistryOnPostgres(PostgreSQLClient.createShared(vertx, createConfig()));
+        ObservableTaskRegistryOnPostgres registry = new ObservableTaskRegistryOnPostgres(client);
 
         Task task1 = new Task(UUID.randomUUID(), "task1", Collections.singleton("vga"), Instant.now());
         Task task2 = new Task(UUID.randomUUID(), "task2", Collections.singleton("vga"), Instant.now());
@@ -70,7 +74,6 @@ public class ObservableTaskRegistryOnPostgresTest {
             return prev + 1;
         }).subscribe(sum -> {
             context.assertEquals(sum, 2);
-            registry.close();
             async.complete();
         });
     }

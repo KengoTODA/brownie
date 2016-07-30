@@ -12,7 +12,7 @@ import rx.Observable;
  * An API to persist/load {@link FileMetadata}.
  */
 @ParametersAreNonnullByDefault
-public interface ObservableFileMetadataRegistry extends AutoCloseable {
+public interface ObservableFileMetadataRegistry {
     /**
      * Iterate all {@link FileMetadata} in this registry.
      */
@@ -45,7 +45,4 @@ public interface ObservableFileMetadataRegistry extends AutoCloseable {
      *      ID of target {@link FileMetadata} to load
      */
     Observable<Void> delete(@FileId UUID fileId);
-
-    @Override
-    void close();
 }

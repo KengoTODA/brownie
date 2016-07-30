@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -221,11 +220,5 @@ public class FrontendServer {
         }, () -> {
             response.end(responseBody.append("]").toString());
         });
-    }
-
-    @PreDestroy
-    public void close() {
-        observableTaskRegistry.close();
-        observableFileMetadataRegistry.close();
     }
 }
