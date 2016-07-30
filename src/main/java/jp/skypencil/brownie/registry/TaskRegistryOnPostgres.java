@@ -1,14 +1,9 @@
 package jp.skypencil.brownie.registry;
 
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -48,13 +43,7 @@ public class TaskRegistryOnPostgres implements TaskRegistry {
                     if (selected.failed()) {
                         future.fail(selected.cause());
                     } else {
-                        Iterator<Task> iterator = selected.result().getResults().stream().map(json -> {
-                            UUID key = UUID.fromString(json.getString(0));
-                            String name = json.getString(1);
-                            Set<String> resolutions = new HashSet<>(Arrays.asList(json.getString(2).split(",")));
-                            Instant generated = Instant.parse(json.getString(3) + "Z");
-                            return new Task(key, name, resolutions, generated);
-                        }).iterator();
+                        Iterator<Task> iterator = selected.result().getResults().stream().map(Task::from).iterator();
                         future.complete(new TaskReadStream(iterator));
                     }
                     handler.handle(future);
@@ -74,12 +63,7 @@ public class TaskRegistryOnPostgres implements TaskRegistry {
                 handler.handle(future);
             } else {
                 SQLConnection con = connected.result();
-                JsonArray params = new JsonArray()
-                        .add(task.getKey().toString())
-                        .add(task.getUploadedFileName())
-                        .add(task.getResolutions().stream().collect(Collectors.joining(",")))
-                        .add(task.getRegistered());
-                con.queryWithParams("INSERT INTO task (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", params, inserted -> {
+                con.queryWithParams("INSERT INTO task (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", task.toJsonArray(), inserted -> {
                     try (SQLConnection connection = con) {
                         if (inserted.failed()) {
                             future.fail(inserted.cause());
@@ -110,11 +94,8 @@ public class TaskRegistryOnPostgres implements TaskRegistry {
                         if (selected.failed()) {
                             future.fail(selected.cause());
                         } else {
-                            Optional<Task> result = selected.result().getResults().stream().findFirst().map(json -> {
-                                String name = json.getString(1);
-                                Set<String> resolutions = new HashSet<>(Arrays.asList(json.getString(2).split(",")));
-                                Instant generated = Instant.parse(json.getString(3) + "Z");
-                                return new Task(taskId, name, resolutions, generated);
+                            Optional<Task> result = selected.result().getResults().stream().findFirst().map(array -> {
+                                return Task.from(taskId, array);
                             });
                             future.complete(result);
                         }
