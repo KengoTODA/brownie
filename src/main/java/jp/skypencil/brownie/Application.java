@@ -22,8 +22,6 @@ import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import jp.skypencil.brownie.fs.ObservableMountedFileSystem;
 import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
-import jp.skypencil.brownie.registry.FileMetadataRegistry;
-import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
@@ -163,11 +161,6 @@ public class Application {
         }
         log.info("Initialized shared file system at {}", mountedDirectory);
         return new ObservableMountedFileSystem(mountedDirectory);
-    }
-
-    @Bean
-    public FileMetadataRegistry fileMetadataRegistry(Vertx vertx) {
-        return new FileMetadataRegistryOnPostgres(vertx, postgresConfig());
     }
 
     @Bean
