@@ -15,8 +15,13 @@ import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.sql.SQLConnection;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import rx.Observable;
 
+@RequiredArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for Unit test
 public class ObservableFileMetadataRegistryOnPostgres
         implements ObservableFileMetadataRegistry {
     @Resource
@@ -86,7 +91,7 @@ public class ObservableFileMetadataRegistryOnPostgres
                         .add(metadata.getFileId().toString());
                 return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params)
                         .doAfterTerminate(con::close);
-            }).flatMap(ur -> {
+            }).map(ur -> {
                 return null;
             });
     }
