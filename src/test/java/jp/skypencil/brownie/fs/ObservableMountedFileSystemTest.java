@@ -65,7 +65,7 @@ public class ObservableMountedFileSystemTest {
     }
 
     @Test
-    public void testLoadFile(TestContext context) {
+    public void testLoad(TestContext context) {
         Async async = context.async();
         UUID key = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
@@ -75,6 +75,26 @@ public class ObservableMountedFileSystemTest {
             context.assertEquals("buffer", onNext.toString());
         }, context::fail, () -> {
             async.complete();
+        });
+    }
+
+    @Test
+    public void testDelete(TestContext context) {
+        Async async = context.async();
+        UUID key = UUID.randomUUID();
+        Buffer buffer = Buffer.buffer("buffer");
+        fileSystem.store(key, buffer).flatMap(v -> {
+            return fileSystem.delete(key);
+        }).flatMap(v -> {
+            return fileSystem.load(key);
+        }).subscribe(onNext -> {
+            context.fail();
+        }, error -> {
+            context.assertTrue(error instanceof FileSystemException);
+            context.assertTrue(error.getCause() instanceof NoSuchFileException);
+            async.complete();
+        }, () -> {
+            context.fail();
         });
     }
 

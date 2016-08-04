@@ -3,22 +3,16 @@ package jp.skypencil.brownie.fs;
 import java.util.Objects;
 import java.util.UUID;
 
-import javax.annotation.Resource;
-
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
 
 @RequiredArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // for Unit test
 public class ObservableMountedFileSystem implements ObservableSharedFileSystem {
     private final String baseDir;
 
-    @Resource
-    Vertx rxJavaVertx;
+    private final Vertx rxJavaVertx;
 
     @Override
     public Observable<Buffer> load(UUID key) {

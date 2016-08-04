@@ -154,13 +154,13 @@ public class Application {
     }
 
     @Bean
-    public ObservableSharedFileSystem sharedFileSystem() {
+    public ObservableSharedFileSystem sharedFileSystem(io.vertx.rxjava.core.Vertx vertx) {
         File directory = new File(mountedDirectory);
         if (!directory.isDirectory()) {
             throw new IllegalStateException("Specified directory does not exist: " + mountedDirectory);
         }
         log.info("Initialized shared file system at {}", mountedDirectory);
-        return new ObservableMountedFileSystem(mountedDirectory);
+        return new ObservableMountedFileSystem(mountedDirectory, vertx);
     }
 
     @Bean
