@@ -13,28 +13,35 @@ import org.junit.Test;
 import org.springframework.util.MimeType;
 
 public class FileMetadataTest {
-	@Test
-	public void testToString() {
-		String string = new FileMetadata(UUID.randomUUID(), "name", MimeType.valueOf("text/plain"), 0, Instant.now()).toString();
-		assertThat(string, is(containsString("name=name")));
-		assertThat(string, is(containsString("mimeType=text/plain")));
-	}
+    @Test
+    public void testToString() {
+        String string = new FileMetadata(UUID.randomUUID(), "name",
+                MimeType.valueOf("text/plain"), 0, Instant.now()).toString();
+        assertThat(string, is(containsString("name=name")));
+        assertThat(string, is(containsString("mimeType=text/plain")));
+    }
 
-	@Test
-	public void testHashCode() {
-		FileMetadata metadata = new FileMetadata(UUID.randomUUID(), "name", MimeType.valueOf("text/plain"), 0, Instant.now());
-		int hashCode = metadata.hashCode();
-		assertThat(new FileMetadata(metadata.getFileId(), "name", MimeType.valueOf("text/plain"), 0, metadata.getGenerated()).hashCode(),
-				is(equalTo(hashCode)));
-		assertThat(new FileMetadata(UUID.randomUUID(), "name", MimeType.valueOf("text/plain"), 0, Instant.now()).hashCode(),
-				is(not(equalTo(hashCode))));
-	}
+    @Test
+    public void testHashCode() {
+        FileMetadata metadata = new FileMetadata(UUID.randomUUID(), "name",
+                MimeType.valueOf("text/plain"), 0, Instant.now());
+        int hashCode = metadata.hashCode();
+        assertThat(
+                new FileMetadata(metadata.getFileId(), "name",
+                        MimeType.valueOf("text/plain"), 0,
+                        metadata.getGenerated()).hashCode(),
+                is(equalTo(hashCode)));
+        assertThat(new FileMetadata(UUID.randomUUID(), "name",
+                MimeType.valueOf("text/plain"), 0, Instant.now()).hashCode(),
+                is(not(equalTo(hashCode))));
+    }
 
-	@Test
-	public void testToJson() {
-		String json = new FileMetadata(UUID.randomUUID(), "name", MimeType.valueOf("text/plain"), 0, Instant.now()).toJson();
-		assertThat(json, is(containsString("\"fileId\"")));
-		assertThat(json, is(containsString("\"fileName\":\"name\"")));
-		assertThat(json, is(containsString("\"text/plain\"")));
-	}
+    @Test
+    public void testToJson() {
+        String json = new FileMetadata(UUID.randomUUID(), "name",
+                MimeType.valueOf("text/plain"), 0, Instant.now()).toJson();
+        assertThat(json, is(containsString("\"fileId\"")));
+        assertThat(json, is(containsString("\"fileName\":\"name\"")));
+        assertThat(json, is(containsString("\"text/plain\"")));
+    }
 }
