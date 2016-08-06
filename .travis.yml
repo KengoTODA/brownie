@@ -13,6 +13,8 @@ script:
   - mvn clean verify -Ddb.host=localhost -Ddb.port=15432
 after_script:
   - docker stop postgres
+after_success:
+  - mvn jacoco:report coveralls:report
 notifications:
   email:
     recipients:
