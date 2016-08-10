@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -29,7 +28,11 @@ import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import rx.Observable;
 
 
 
@@ -45,6 +48,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE) // for unit test
 public class FrontendServer {
     /**
      * Directory to store uploaded file.
@@ -94,40 +99,7 @@ public class FrontendServer {
 
         // Serve the form handling part
         router.route("/form").handler(BodyHandler.create().setUploadsDirectory(directory));
-        router.post("/form").handler(ctx -> {
-            HttpServerResponse response = ctx.response()
-                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "text/plain");
-            Set<FileUpload> uploadedFiles = ctx.fileUploads();
-            if (uploadedFiles.isEmpty()) {
-                response.end("No file uploaded");
-                return;
-            }
-            AtomicInteger countDown = new AtomicInteger(uploadedFiles.size());
-            uploadedFiles.forEach(fileUpload -> {
-                Task task = new Task(keyGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
-                File file = new File(fileUpload.uploadedFileName());
-                MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
-                fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType)
-                .doOnError(error -> {
-                    log.warn("Failed to store file onto file system", error);
-                    response
-                        .setStatusCode(500)
-                        .end("Internal server error");
-                }).flatMap(v -> {
-                    return observableTaskRegistry.store(task).doOnCompleted(() -> {
-                        rxJavaVertx.eventBus().send("file-uploaded", task);
-                        if (countDown.decrementAndGet() == 0) {
-                            response.end("registered");
-                        }
-                    }).doOnError(error -> {
-                        log.warn("Failed to store task to registry", error);
-                        response
-                            .setStatusCode(500)
-                            .end("Internal server error");
-                    });
-                }).subscribe();
-            });
-        });
+        router.post("/form").handler(this::handleForm);
         router.mountSubRouter("/tasks", createRouterForTaskApi());
         router.mountSubRouter("/files", createRouterForFileApi());
         // Serve the static pages
@@ -135,6 +107,34 @@ public class FrontendServer {
 
         rxJavaVertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
         log.info("HTTP server is listening {} port", httpPort);
+    }
+
+    void handleForm(RoutingContext ctx) {
+        HttpServerResponse response = ctx.response()
+                .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "text/plain");
+        Set<FileUpload> uploadedFiles = ctx.fileUploads();
+        if (uploadedFiles.isEmpty()) {
+            response.end("No file uploaded");
+            return;
+        }
+        Observable.from(uploadedFiles).flatMap(fileUpload -> {
+            Task task = new Task(keyGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
+            File file = new File(fileUpload.uploadedFileName());
+            MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
+            return Observable.merge(
+                    fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType),
+                    observableTaskRegistry.store(task)
+            ).doOnCompleted(() -> {
+                rxJavaVertx.eventBus().send("file-uploaded", task);
+            });
+        }).subscribe(v -> {}, error -> {
+            log.warn("Failed to store task to registry", error);
+            response
+                .setStatusCode(500)
+                .end("Internal server error");
+        }, () -> {
+            response.end("registered");
+        });
     }
 
     private Router createRouterForTaskApi() {
