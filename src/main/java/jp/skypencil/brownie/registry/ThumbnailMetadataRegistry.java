@@ -11,7 +11,7 @@ import rx.Observable;
 import rx.Single;
 
 @ParametersAreNonnullByDefault
-interface ThumbnailMetadataRegistry {
+public interface ThumbnailMetadataRegistry {
     /**
      * Store a {@link ThumbnailMetadata} for specified video key.
      *
