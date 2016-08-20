@@ -30,6 +30,7 @@ import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 
 @RunWith(VertxUnitRunner.class)
 public class FrontendServerTest {
@@ -78,6 +79,7 @@ public class FrontendServerTest {
                 fileTransporter,
                 taskRegistry,
                 mock(ObservableFileMetadataRegistry.class),
+                mock(ThumbnailMetadataRegistry.class),
                 new KeyGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
@@ -111,6 +113,7 @@ public class FrontendServerTest {
                 fileTransporter,
                 taskRegistry,
                 mock(ObservableFileMetadataRegistry.class),
+                mock(ThumbnailMetadataRegistry.class),
                 new KeyGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
@@ -145,6 +148,7 @@ public class FrontendServerTest {
                 fileTransporter,
                 taskRegistry,
                 mock(ObservableFileMetadataRegistry.class),
+                mock(ThumbnailMetadataRegistry.class),
                 new KeyGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();

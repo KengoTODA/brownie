@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -14,45 +15,47 @@ import org.junit.Test;
 public class TaskTest {
     @Test
     public void testHashCode() {
+        Instant now = Instant.now();
         Task task = new Task(UUID.randomUUID(), "fileName",
-                Collections.singleton("resolution"));
+                Collections.singleton("resolution"), now);
         assertThat(
                 new Task(task.getKey(), "fileName",
-                        Collections.singleton("resolution")).hashCode(),
+                        Collections.singleton("resolution"), now).hashCode(),
                 is(equalTo(task.hashCode())));
         assertThat(
                 new Task(task.getKey(), "anotherFileName",
-                        Collections.singleton("resolution")).hashCode(),
+                        Collections.singleton("resolution"), now).hashCode(),
                 is(not(equalTo(task.hashCode()))));
         assertThat(
                 new Task(task.getKey(), "fileName",
-                        Collections.singleton("anotherResolution")).hashCode(),
+                        Collections.singleton("anotherResolution"), now).hashCode(),
                 is(not(equalTo(task.hashCode()))));
         assertThat(
                 new Task(UUID.randomUUID(), "fileName",
-                        Collections.singleton("resolution")),
+                        Collections.singleton("resolution"), now),
                 is(not(equalTo(task.hashCode()))));
     }
 
     @Test
     public void testEquals() {
+        Instant now = Instant.now();
         Task task = new Task(UUID.randomUUID(), "fileName",
-                Collections.singleton("resolution"));
+                Collections.singleton("resolution"), now);
         assertThat(
                 new Task(task.getKey(), "fileName",
-                        Collections.singleton("resolution")),
+                        Collections.singleton("resolution"), now),
                 is(equalTo(task)));
         assertThat(
                 new Task(task.getKey(), "anotherFileName",
-                        Collections.singleton("resolution")),
+                        Collections.singleton("resolution"), now),
                 is(not(equalTo(task))));
         assertThat(
                 new Task(task.getKey(), "fileName",
-                        Collections.singleton("anotherResolution")),
+                        Collections.singleton("anotherResolution"), now),
                 is(not(equalTo(task))));
         assertThat(
                 new Task(UUID.randomUUID(), "fileName",
-                        Collections.singleton("resolution")),
+                        Collections.singleton("resolution"), now),
                 is(not(equalTo(task))));
     }
 

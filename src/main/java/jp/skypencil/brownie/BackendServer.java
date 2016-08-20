@@ -1,6 +1,7 @@
 package jp.skypencil.brownie;
 
 import java.io.File;
+import java.util.UUID;
 
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.eventbus.Message;
@@ -72,13 +73,15 @@ public class BackendServer {
 
     private Observable<Void> upload(File source, String fileName,
             Message<Task> message) {
-        return fileTransporter.upload(keyGenerator.generateUuidV1(), fileName,
+        UUID key = keyGenerator.generateUuidV1();
+        return fileTransporter.upload(key, fileName,
                 source, MimeType.valueOf("video/mpeg")).doOnError(error -> {
                     log.error("Failed to upload file ({})",
                             source.getAbsolutePath(), error);
                     message.fail(3, "Failed to upload file");
                 }).doOnNext(v -> {
                     log.info("Uploaded file ({})", source.getAbsolutePath());
+                    rxJavaVertx.eventBus().send("generate-thumbnail", key);
                 });
     }
 }
