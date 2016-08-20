@@ -5,7 +5,7 @@ CREATE TABLE thumbnail_metadata (
   content_length integer,
   width integer,
   height integer,
-  second real,
+  milliseconds integer,
   generated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );

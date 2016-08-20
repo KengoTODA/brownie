@@ -1,7 +1,5 @@
 package jp.skypencil.brownie.registry;
 
-import static org.junit.Assert.*;
-
 import java.util.UUID;
 
 import org.junit.After;
@@ -44,7 +42,7 @@ public class ThumbnailMetadataRegistryOnPostgresTest {
         ThumbnailMetadataRegistry registry = new ThumbnailMetadataRegistryOnPostgres(client);
         UUID id = UUID.randomUUID();
         UUID videoId = UUID.randomUUID();
-        ThumbnailMetadata metadata = new ThumbnailMetadata(id, videoId, MimeType.valueOf("image/jpg"), 100, 320, 240, 0.0);
+        ThumbnailMetadata metadata = new ThumbnailMetadata(id, videoId, MimeType.valueOf("image/jpg"), 100, 320, 240, 0);
 
         Async async = context.async();
         registry.store(videoId, metadata).subscribe(v -> async.complete(), context::fail);
@@ -66,7 +64,7 @@ public class ThumbnailMetadataRegistryOnPostgresTest {
         ThumbnailMetadataRegistry registry = new ThumbnailMetadataRegistryOnPostgres(client);
         UUID id = UUID.randomUUID();
         UUID videoId = UUID.randomUUID();
-        ThumbnailMetadata metadata = new ThumbnailMetadata(id, videoId, MimeType.valueOf("image/jpg"), 100, 320, 240, 0.0);
+        ThumbnailMetadata metadata = new ThumbnailMetadata(id, videoId, MimeType.valueOf("image/jpg"), 100, 320, 240, 0);
 
         Async async = context.async();
         registry.store(videoId, metadata).toObservable().flatMap(v -> {

@@ -18,8 +18,8 @@ import rx.Single;
 @AllArgsConstructor(access = AccessLevel.PACKAGE) // for unit test
 public class ThumbnailMetadataRegistryOnPostgres
         implements ThumbnailMetadataRegistry {
-    private static final String SQL_TO_INSERT = "INSERT INTO thumbnail_metadata (id, video_id, mime_type, content_length, width, height, second) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    private static final String SQL_TO_SELECT = "SELECT id, video_id, mime_type, content_length, width, height, second FROM thumbnail_metadata WHERE video_id = ?";
+    private static final String SQL_TO_INSERT = "INSERT INTO thumbnail_metadata (id, video_id, mime_type, content_length, width, height, milliseconds) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    private static final String SQL_TO_SELECT = "SELECT id, video_id, mime_type, content_length, width, height, milliseconds FROM thumbnail_metadata WHERE video_id = ?";
 
     @Resource
     private AsyncSQLClient asyncSQLClient;

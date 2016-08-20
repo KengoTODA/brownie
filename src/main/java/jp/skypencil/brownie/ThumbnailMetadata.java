@@ -33,7 +33,7 @@ public class ThumbnailMetadata {
     int height;
 
     @Nonnegative
-    double second;
+    int milliseconds;
 
     public static ThumbnailMetadata valueOf(JsonObject obj) {
         return new ThumbnailMetadata(
@@ -43,7 +43,7 @@ public class ThumbnailMetadata {
                 obj.getLong("content_length"),
                 obj.getInteger("width"),
                 obj.getInteger("height"),
-                obj.getDouble("second"));
+                obj.getInteger("milliseconds"));
     }
 
     public JsonArray toJsonArray() {
@@ -54,6 +54,6 @@ public class ThumbnailMetadata {
                 .add(contentLength)
                 .add(width)
                 .add(height)
-                .add(second);
+                .add(milliseconds);
     }
 }
