@@ -28,6 +28,7 @@ import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,9 @@ public class FrontendServer {
     private ObservableFileMetadataRegistry observableFileMetadataRegistry;
 
     @Resource
+    private ThumbnailMetadataRegistry thumbnailMetadataRegistry;
+
+    @Resource
     private KeyGenerator keyGenerator;
 
     /**
@@ -102,6 +106,7 @@ public class FrontendServer {
         router.post("/form").handler(this::handleForm);
         router.mountSubRouter("/tasks", createRouterForTaskApi());
         router.mountSubRouter("/files", createRouterForFileApi());
+        router.mountSubRouter("/thumbnail", createRouterForThumbnailApi());
         // Serve the static pages
         router.route().handler(StaticHandler.create());
 
@@ -173,6 +178,31 @@ public class FrontendServer {
             deleteFile(ctx, fileId);
         });
         return subRouter;
+    }
+
+    private Router createRouterForThumbnailApi() {
+        Router subRouter = Router.router(rxJavaVertx);
+        subRouter.get("/:videoId").handler(this::downloadThumbnail);
+        return subRouter;
+    }
+
+    private void downloadThumbnail(RoutingContext ctx) {
+        UUID videoId = UUID.fromString(ctx.request().getParam("videoId"));
+        HttpServerResponse response = ctx.response();
+        thumbnailMetadataRegistry.search(videoId).first().toSingle()
+            .flatMap(thumbnail -> {
+                UUID thumbnailId = thumbnail.getId();
+                return fileTransporter.download(thumbnailId).toSingle();
+            })
+            .flatMap(thumbnailFile -> {
+                return response.sendFileObservable(thumbnailFile.getAbsolutePath()).toSingle();
+            })
+            .subscribe(v -> {
+                response.close();
+            }, error -> {
+                log.error("Failed to respond thumbnail", error);
+                response.setStatusCode(500).end();
+            });
     }
 
     private void deleteFile(RoutingContext ctx, String fileId) {

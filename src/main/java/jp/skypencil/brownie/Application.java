@@ -1,6 +1,7 @@
 package jp.skypencil.brownie;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
@@ -26,6 +27,8 @@ import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
 import jp.skypencil.brownie.registry.ObservableFileMetadataRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ObservableTaskRegistry;
 import jp.skypencil.brownie.registry.ObservableTaskRegistryOnPostgres;
+import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
+import jp.skypencil.brownie.registry.ThumbnailMetadataRegistryOnPostgres;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -133,6 +136,7 @@ public class Application {
             throw new IllegalStateException("Failed to connect to cluster", vertxFuture.cause());
         }
         vertx = vertxFuture.result();
+        vertx.eventBus().registerDefaultCodec(UUID.class, new UuidCodec());
         vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
         return vertx;
     }
@@ -177,6 +181,11 @@ public class Application {
     @Bean
     public ObservableFileMetadataRegistry observableFileMetadataRegistry(io.vertx.rxjava.core.Vertx vertx) {
         return new ObservableFileMetadataRegistryOnPostgres();
+    }
+
+    @Bean
+    public ThumbnailMetadataRegistry thumbnailMetadataRegistry(AsyncSQLClient sqlClient) {
+        return new ThumbnailMetadataRegistryOnPostgres(sqlClient);
     }
 
     private JsonObject postgresConfig() {

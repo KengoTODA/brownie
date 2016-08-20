@@ -2,26 +2,20 @@ package jp.skypencil.brownie.registry;
 
 import java.util.UUID;
 
-import javax.annotation.Resource;
-
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import jp.skypencil.brownie.ThumbnailMetadata;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
 
-@RequiredArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // for unit test
+@AllArgsConstructor
 public class ThumbnailMetadataRegistryOnPostgres
         implements ThumbnailMetadataRegistry {
     private static final String SQL_TO_INSERT = "INSERT INTO thumbnail_metadata (id, video_id, mime_type, content_length, width, height, milliseconds) VALUES (?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_TO_SELECT = "SELECT id, video_id, mime_type, content_length, width, height, milliseconds FROM thumbnail_metadata WHERE video_id = ?";
 
-    @Resource
     private AsyncSQLClient asyncSQLClient;
 
     @Override
