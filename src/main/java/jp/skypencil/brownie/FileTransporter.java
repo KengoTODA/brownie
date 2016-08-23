@@ -15,8 +15,8 @@ import io.vertx.core.file.OpenOptions;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.file.AsyncFile;
-import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
+import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -26,17 +26,17 @@ import rx.Observable;
 @ParametersAreNonnullByDefault
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PACKAGE) // only for unit test
-public class ObservableFileTransporter {
+public class FileTransporter {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
     @Resource
     private Vertx rxJavaVertx;
 
     @Resource
-    private ObservableSharedFileSystem observableFileSystem;
+    private SharedFileSystem observableFileSystem;
 
     @Resource
-    private ObservableFileMetadataRegistry observableFileMetadataRegistry;
+    private FileMetadataRegistry observableFileMetadataRegistry;
 
     /**
      * Download a file from shared file system, and store it to local file system.

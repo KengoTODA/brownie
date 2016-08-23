@@ -21,12 +21,12 @@ import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
-import jp.skypencil.brownie.fs.ObservableMountedFileSystem;
-import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistryOnPostgres;
-import jp.skypencil.brownie.registry.ObservableTaskRegistry;
-import jp.skypencil.brownie.registry.ObservableTaskRegistryOnPostgres;
+import jp.skypencil.brownie.fs.MountedFileSystem;
+import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
+import jp.skypencil.brownie.registry.TaskRegistry;
+import jp.skypencil.brownie.registry.TaskRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistryOnPostgres;
 import lombok.extern.slf4j.Slf4j;
@@ -158,13 +158,13 @@ public class Application {
     }
 
     @Bean
-    public ObservableSharedFileSystem sharedFileSystem(io.vertx.rxjava.core.Vertx vertx) {
+    public SharedFileSystem sharedFileSystem(io.vertx.rxjava.core.Vertx vertx) {
         File directory = new File(mountedDirectory);
         if (!directory.isDirectory()) {
             throw new IllegalStateException("Specified directory does not exist: " + mountedDirectory);
         }
         log.info("Initialized shared file system at {}", mountedDirectory);
-        return new ObservableMountedFileSystem(mountedDirectory, vertx);
+        return new MountedFileSystem(mountedDirectory, vertx);
     }
 
     @Bean
@@ -174,13 +174,13 @@ public class Application {
     }
 
     @Bean
-    public ObservableTaskRegistry taskRegistry(io.vertx.rxjava.core.Vertx vertx) {
-        return new ObservableTaskRegistryOnPostgres();
+    public TaskRegistry taskRegistry(io.vertx.rxjava.core.Vertx vertx) {
+        return new TaskRegistryOnPostgres();
     }
 
     @Bean
-    public ObservableFileMetadataRegistry observableFileMetadataRegistry(io.vertx.rxjava.core.Vertx vertx) {
-        return new ObservableFileMetadataRegistryOnPostgres();
+    public FileMetadataRegistry observableFileMetadataRegistry(io.vertx.rxjava.core.Vertx vertx) {
+        return new FileMetadataRegistryOnPostgres();
     }
 
     @Bean

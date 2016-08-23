@@ -19,17 +19,17 @@ import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import jp.skypencil.brownie.FileMetadata;
 
 @RunWith(VertxUnitRunner.class)
-public class ObservableFileMetadataRegistryOnPostgresTest {
+public class FileMetadataRegistryOnPostgresTest {
 
     private Vertx vertx;
     private AsyncSQLClient client;
-    private ObservableFileMetadataRegistryOnPostgres registry;
+    private FileMetadataRegistryOnPostgres registry;
 
     @Before
     public final void setUp() {
         vertx = Vertx.vertx();
         client = PostgreSQLClient.createShared(vertx, createConfig());
-        registry = new ObservableFileMetadataRegistryOnPostgres(client);
+        registry = new FileMetadataRegistryOnPostgres(client);
     }
 
     @After

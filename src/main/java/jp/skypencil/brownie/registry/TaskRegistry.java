@@ -13,7 +13,7 @@ import rx.Observable;
  * An API to persist/load {@link Task}s.
  */
 @ParametersAreNonnullByDefault
-public interface ObservableTaskRegistry {
+public interface TaskRegistry {
     /**
      * Iterate all {@link Task}s in this registry. Result is sorted by updated time.
      */

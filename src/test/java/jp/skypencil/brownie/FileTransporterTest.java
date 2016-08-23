@@ -22,12 +22,12 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
-import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
+import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import rx.Observable;
 
 @RunWith(VertxUnitRunner.class)
-public class ObservableFileTransporterTest {
+public class FileTransporterTest {
 
     private Vertx vertx;
 
@@ -47,9 +47,9 @@ public class ObservableFileTransporterTest {
     @Test
     public void testUpload(TestContext context) throws IOException {
         Async async = context.async();
-        ObservableSharedFileSystem fileSystem = Mockito.mock(ObservableSharedFileSystem.class);
-        ObservableFileMetadataRegistry fileMetadataRegistry = Mockito.mock(ObservableFileMetadataRegistry.class);
-        ObservableFileTransporter transporter = new ObservableFileTransporter(vertx, fileSystem, fileMetadataRegistry); 
+        SharedFileSystem fileSystem = Mockito.mock(SharedFileSystem.class);
+        FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
+        FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
         UUID key = UUID.randomUUID();
         File file = folder.newFile();
@@ -65,9 +65,9 @@ public class ObservableFileTransporterTest {
     @Test
     public void testDelete(TestContext context) throws IOException {
         Async async = context.async();
-        ObservableSharedFileSystem fileSystem = Mockito.mock(ObservableSharedFileSystem.class);
-        ObservableFileMetadataRegistry fileMetadataRegistry = Mockito.mock(ObservableFileMetadataRegistry.class);
-        ObservableFileTransporter transporter = new ObservableFileTransporter(vertx, fileSystem, fileMetadataRegistry); 
+        SharedFileSystem fileSystem = Mockito.mock(SharedFileSystem.class);
+        FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
+        FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
         UUID key = UUID.randomUUID();
         doReturn(Observable.just((Void) null)).when(fileSystem).delete(eq(key));
@@ -82,9 +82,9 @@ public class ObservableFileTransporterTest {
     @Test
     public void testDownload(TestContext context) throws IOException {
         Async async = context.async();
-        ObservableSharedFileSystem fileSystem = Mockito.mock(ObservableSharedFileSystem.class);
-        ObservableFileMetadataRegistry fileMetadataRegistry = Mockito.mock(ObservableFileMetadataRegistry.class);
-        ObservableFileTransporter transporter = new ObservableFileTransporter(vertx, fileSystem, fileMetadataRegistry); 
+        SharedFileSystem fileSystem = Mockito.mock(SharedFileSystem.class);
+        FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
+        FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
         UUID key = UUID.randomUUID();
         doReturn(Observable.just(Buffer.buffer("buffer"))).when(fileSystem).load(eq(key));

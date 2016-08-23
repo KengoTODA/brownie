@@ -23,10 +23,10 @@ public class BackendServer {
     private Vertx rxJavaVertx;
 
     @Resource
-    private ObservableFileEncoder fileEncoder;
+    private FileEncoder fileEncoder;
 
     @Resource
-    private ObservableFileTransporter fileTransporter;
+    private FileTransporter fileTransporter;
 
     @Resource
     private KeyGenerator keyGenerator;

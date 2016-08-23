@@ -22,8 +22,8 @@ import rx.Observable;
 
 @RequiredArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PACKAGE) // only for Unit test
-public class ObservableFileMetadataRegistryOnPostgres
-        implements ObservableFileMetadataRegistry {
+public class FileMetadataRegistryOnPostgres
+        implements FileMetadataRegistry {
     @Resource
     private AsyncSQLClient postgreSQLClient;
 

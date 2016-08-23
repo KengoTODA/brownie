@@ -10,7 +10,7 @@ import rx.Observable;
  * Interface to encode video file.
  */
 @ParametersAreNonnullByDefault
-public interface ObservableFileEncoder {
+public interface FileEncoder {
     /**
      * 
      * @param targetFile

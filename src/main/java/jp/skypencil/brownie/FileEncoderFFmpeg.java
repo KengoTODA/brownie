@@ -12,23 +12,23 @@ import org.springframework.stereotype.Component;
 import io.vertx.core.Handler;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
-import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
+import jp.skypencil.brownie.fs.SharedFileSystem;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
 
 /**
- * An {@link ObservableFileEncoder} implementation which depends on FFmpeg.
+ * An {@link FileEncoder} implementation which depends on FFmpeg.
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
 @Component
 @Slf4j
 @ParametersAreNonnullByDefault
-public class ObservableFileEncoderFFmpeg implements ObservableFileEncoder {
+public class FileEncoderFFmpeg implements FileEncoder {
     @Resource
     private Vertx rxJavaVertx;
 
     @Resource
-    private ObservableSharedFileSystem fileSystem;
+    private SharedFileSystem fileSystem;
 
     @Override
     public Observable<File> convert(File targetFile, String resolution) {

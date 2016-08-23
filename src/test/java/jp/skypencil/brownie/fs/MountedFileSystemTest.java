@@ -19,9 +19,9 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 
 @RunWith(VertxUnitRunner.class)
-public class ObservableMountedFileSystemTest {
+public class MountedFileSystemTest {
     private Vertx vertx;
-    private ObservableMountedFileSystem fileSystem;
+    private MountedFileSystem fileSystem;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -29,7 +29,7 @@ public class ObservableMountedFileSystemTest {
     @Before
     public final void setUp() throws IOException {
         vertx = Vertx.vertx();
-        fileSystem = new ObservableMountedFileSystem(folder.newFolder().getAbsolutePath(), vertx);
+        fileSystem = new MountedFileSystem(folder.newFolder().getAbsolutePath(), vertx);
     }
 
     @After

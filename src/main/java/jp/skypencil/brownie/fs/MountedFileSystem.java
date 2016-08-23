@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import rx.Observable;
 
 @RequiredArgsConstructor
-public class ObservableMountedFileSystem implements ObservableSharedFileSystem {
+public class MountedFileSystem implements SharedFileSystem {
     private final String baseDir;
 
     private final Vertx rxJavaVertx;

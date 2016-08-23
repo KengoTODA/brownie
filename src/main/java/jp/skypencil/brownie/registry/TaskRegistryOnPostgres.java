@@ -16,7 +16,7 @@ import rx.Observable;
 
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PACKAGE) // only for test
-public class ObservableTaskRegistryOnPostgres implements ObservableTaskRegistry {
+public class TaskRegistryOnPostgres implements TaskRegistry {
     @Resource
     private AsyncSQLClient postgreSQLClient;
 

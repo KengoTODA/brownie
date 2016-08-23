@@ -27,7 +27,7 @@ public class ThumbnailServer {
     private Vertx rxJavaVertx;
 
     @Resource
-    private ObservableFileTransporter fileTransporter;
+    private FileTransporter fileTransporter;
 
     @Resource
     private ThumbnailGenerator thumbnailGenerator;

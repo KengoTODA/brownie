@@ -12,7 +12,7 @@ import rx.Observable;
  * An API to persist/load {@link FileMetadata}.
  */
 @ParametersAreNonnullByDefault
-public interface ObservableFileMetadataRegistry {
+public interface FileMetadataRegistry {
     /**
      * Iterate all {@link FileMetadata} in this registry.
      */

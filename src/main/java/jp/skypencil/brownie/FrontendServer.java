@@ -26,8 +26,8 @@ import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
-import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.TaskRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -61,13 +61,13 @@ public class FrontendServer {
     private Vertx rxJavaVertx;
 
     @Resource
-    private ObservableFileTransporter fileTransporter;
+    private FileTransporter fileTransporter;
 
     @Resource
-    private ObservableTaskRegistry observableTaskRegistry;
+    private TaskRegistry observableTaskRegistry;
 
     @Resource
-    private ObservableFileMetadataRegistry observableFileMetadataRegistry;
+    private FileMetadataRegistry observableFileMetadataRegistry;
 
     @Resource
     private ThumbnailMetadataRegistry thumbnailMetadataRegistry;

@@ -28,8 +28,8 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.RoutingContext;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
-import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.TaskRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 
 @RunWith(VertxUnitRunner.class)
@@ -68,8 +68,8 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithOneUploadedFile(TestContext context) throws IOException {
-        ObservableFileTransporter fileTransporter = mock(ObservableFileTransporter.class);
-        ObservableTaskRegistry taskRegistry = mock(ObservableTaskRegistry.class);
+        FileTransporter fileTransporter = mock(FileTransporter.class);
+        TaskRegistry taskRegistry = mock(TaskRegistry.class);
         Future<Void> uploadedFuture = Future.future();
         doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
@@ -78,7 +78,7 @@ public class FrontendServerTest {
         FrontendServer server = new FrontendServer(vertx,
                 fileTransporter,
                 taskRegistry,
-                mock(ObservableFileMetadataRegistry.class),
+                mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
                 new KeyGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
@@ -102,8 +102,8 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithTaskRegistryError(TestContext context) throws IOException {
-        ObservableFileTransporter fileTransporter = mock(ObservableFileTransporter.class);
-        ObservableTaskRegistry taskRegistry = mock(ObservableTaskRegistry.class);
+        FileTransporter fileTransporter = mock(FileTransporter.class);
+        TaskRegistry taskRegistry = mock(TaskRegistry.class);
         Future<Void> uploadedFuture = Future.future();
         doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
@@ -112,7 +112,7 @@ public class FrontendServerTest {
         FrontendServer server = new FrontendServer(vertx,
                 fileTransporter,
                 taskRegistry,
-                mock(ObservableFileMetadataRegistry.class),
+                mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
                 new KeyGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
@@ -137,8 +137,8 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithFileTransporterError(TestContext context) throws IOException {
-        ObservableFileTransporter fileTransporter = mock(ObservableFileTransporter.class);
-        ObservableTaskRegistry taskRegistry = mock(ObservableTaskRegistry.class);
+        FileTransporter fileTransporter = mock(FileTransporter.class);
+        TaskRegistry taskRegistry = mock(TaskRegistry.class);
         Future<Void> uploadedFuture = Future.future();
         doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
@@ -147,7 +147,7 @@ public class FrontendServerTest {
         FrontendServer server = new FrontendServer(vertx,
                 fileTransporter,
                 taskRegistry,
-                mock(ObservableFileMetadataRegistry.class),
+                mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
                 new KeyGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);

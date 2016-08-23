@@ -20,7 +20,7 @@ import jp.skypencil.brownie.Task;
 import rx.Observable;
 
 @RunWith(VertxUnitRunner.class)
-public class ObservableTaskRegistryOnPostgresTest {
+public class TaskRegistryOnPostgresTest {
     private Vertx vertx;
     private AsyncSQLClient client;
 
@@ -41,7 +41,7 @@ public class ObservableTaskRegistryOnPostgresTest {
     public void testStore(TestContext context) {
         Async async = context.async();
 
-        ObservableTaskRegistryOnPostgres registry = new ObservableTaskRegistryOnPostgres(client);
+        TaskRegistryOnPostgres registry = new TaskRegistryOnPostgres(client);
 
         UUID taskId = UUID.randomUUID();
         Task task = new Task(taskId, "name", Collections.singleton("vga"), Instant.now());
@@ -58,7 +58,7 @@ public class ObservableTaskRegistryOnPostgresTest {
     public void testIterate(TestContext context) {
         Async async = context.async();
 
-        ObservableTaskRegistryOnPostgres registry = new ObservableTaskRegistryOnPostgres(client);
+        TaskRegistryOnPostgres registry = new TaskRegistryOnPostgres(client);
 
         Task task1 = new Task(UUID.randomUUID(), "task1", Collections.singleton("vga"), Instant.now());
         Task task2 = new Task(UUID.randomUUID(), "task2", Collections.singleton("vga"), Instant.now());
