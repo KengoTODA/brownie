@@ -19,15 +19,15 @@ public class TaskTest {
         Task task = new Task(UUID.randomUUID(), "fileName",
                 Collections.singleton("resolution"), now);
         assertThat(
-                new Task(task.getKey(), "fileName",
+                new Task(task.getId(), "fileName",
                         Collections.singleton("resolution"), now).hashCode(),
                 is(equalTo(task.hashCode())));
         assertThat(
-                new Task(task.getKey(), "anotherFileName",
+                new Task(task.getId(), "anotherFileName",
                         Collections.singleton("resolution"), now).hashCode(),
                 is(not(equalTo(task.hashCode()))));
         assertThat(
-                new Task(task.getKey(), "fileName",
+                new Task(task.getId(), "fileName",
                         Collections.singleton("anotherResolution"), now).hashCode(),
                 is(not(equalTo(task.hashCode()))));
         assertThat(
@@ -42,15 +42,15 @@ public class TaskTest {
         Task task = new Task(UUID.randomUUID(), "fileName",
                 Collections.singleton("resolution"), now);
         assertThat(
-                new Task(task.getKey(), "fileName",
+                new Task(task.getId(), "fileName",
                         Collections.singleton("resolution"), now),
                 is(equalTo(task)));
         assertThat(
-                new Task(task.getKey(), "anotherFileName",
+                new Task(task.getId(), "anotherFileName",
                         Collections.singleton("resolution"), now),
                 is(not(equalTo(task))));
         assertThat(
-                new Task(task.getKey(), "fileName",
+                new Task(task.getId(), "fileName",
                         Collections.singleton("anotherResolution"), now),
                 is(not(equalTo(task))));
         assertThat(
@@ -63,7 +63,7 @@ public class TaskTest {
     public void testToString() {
         String json = new Task(UUID.randomUUID(), "fileName",
                 Collections.singleton("resolution")).toJson();
-        assertThat(json, is(containsString("\"key\"")));
+        assertThat(json, is(containsString("\"id\"")));
         assertThat(json, is(containsString("\"fileName\"")));
         assertThat(json, is(containsString("\"resolutions\"")));
         assertThat(json, is(containsString("[\"resolution\"]")));

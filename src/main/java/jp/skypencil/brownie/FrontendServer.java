@@ -73,7 +73,7 @@ public class FrontendServer {
     private ThumbnailMetadataRegistry thumbnailMetadataRegistry;
 
     @Resource
-    private KeyGenerator keyGenerator;
+    private IdGenerator idGenerator;
 
     /**
      * TCP port number to connect. It is {@code 8080} by default, and configurable
@@ -123,11 +123,11 @@ public class FrontendServer {
             return;
         }
         Observable.from(uploadedFiles).flatMap(fileUpload -> {
-            Task task = new Task(keyGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
+            Task task = new Task(idGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
             File file = new File(fileUpload.uploadedFileName());
             MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
             return Observable.merge(
-                    fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType),
+                    fileTransporter.upload(task.getId(), fileUpload.fileName(), file, mimeType),
                     observableTaskRegistry.store(task)
             ).doOnCompleted(() -> {
                 rxJavaVertx.eventBus().send("file-uploaded", task);
@@ -207,8 +207,8 @@ public class FrontendServer {
 
     private void deleteFile(RoutingContext ctx, String fileId) {
         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
-        UUID key = UUID.fromString(fileId);
-        fileTransporter.delete(key).subscribe(next -> {},
+        UUID id = UUID.fromString(fileId);
+        fileTransporter.delete(id).subscribe(next -> {},
                 error -> {
                     response.setStatusCode(500).end("Failed to load file");
                 },
@@ -218,12 +218,12 @@ public class FrontendServer {
     }
 
     private void downloadFile(RoutingContext ctx, String fileId) {
-        UUID key = UUID.fromString(fileId);
+        UUID id = UUID.fromString(fileId);
         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
-        observableFileMetadataRegistry.load(key).subscribe(metadata -> {
+        observableFileMetadataRegistry.load(id).subscribe(metadata -> {
             long contentLength = metadata.getContentLength();
             response.putHeader("Content-Length", Long.toString(contentLength));
-            fileTransporter.download(key).subscribe(downloaded -> {
+            fileTransporter.download(id).subscribe(downloaded -> {
                 response.sendFile(downloaded.getAbsolutePath());
             }, error -> {
                 log.error("Failed to download file", error);

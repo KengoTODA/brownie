@@ -51,12 +51,12 @@ public class FileTransporterTest {
         FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
         FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         File file = folder.newFile();
-        doReturn(Observable.just((Void) null)).when(fileSystem).store(eq(key), any());
+        doReturn(Observable.just((Void) null)).when(fileSystem).store(eq(id), any());
         doReturn(Observable.just((Void) null)).when(fileMetadataRegistry).store(any());
-        transporter.upload(key, "name", file, MimeType.valueOf("text/plain")).subscribe(v -> {
-            Mockito.verify(fileSystem).store(eq(key), any());
+        transporter.upload(id, "name", file, MimeType.valueOf("text/plain")).subscribe(v -> {
+            Mockito.verify(fileSystem).store(eq(id), any());
             Mockito.verify(fileMetadataRegistry).store(any());
             async.complete();
         });
@@ -69,12 +69,12 @@ public class FileTransporterTest {
         FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
         FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
-        UUID key = UUID.randomUUID();
-        doReturn(Observable.just((Void) null)).when(fileSystem).delete(eq(key));
-        doReturn(Observable.just((Void) null)).when(fileMetadataRegistry).delete(eq(key));
-        transporter.delete(key).subscribe(v -> {
-            Mockito.verify(fileSystem).delete(eq(key));
-            Mockito.verify(fileMetadataRegistry).delete(eq(key));
+        UUID id = UUID.randomUUID();
+        doReturn(Observable.just((Void) null)).when(fileSystem).delete(eq(id));
+        doReturn(Observable.just((Void) null)).when(fileMetadataRegistry).delete(eq(id));
+        transporter.delete(id).subscribe(v -> {
+            Mockito.verify(fileSystem).delete(eq(id));
+            Mockito.verify(fileMetadataRegistry).delete(eq(id));
             async.complete();
         });
     }
@@ -86,10 +86,10 @@ public class FileTransporterTest {
         FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
         FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
-        UUID key = UUID.randomUUID();
-        doReturn(Observable.just(Buffer.buffer("buffer"))).when(fileSystem).load(eq(key));
-        transporter.download(key).subscribe(v -> {
-            Mockito.verify(fileSystem).load(eq(key));
+        UUID id = UUID.randomUUID();
+        doReturn(Observable.just(Buffer.buffer("buffer"))).when(fileSystem).load(eq(id));
+        transporter.download(id).subscribe(v -> {
+            Mockito.verify(fileSystem).load(eq(id));
             async.complete();
         });
     }

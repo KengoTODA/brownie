@@ -18,26 +18,26 @@ public interface SharedFileSystem {
     /**
      * Load a file from shared file system. This operation fails if target file does not exist.
      *
-     * @param key
-     *      Key of file to load
+     * @param id
+     *      ID of file to load
      */
-    Observable<Buffer> load(UUID key);
+    Observable<Buffer> load(UUID id);
 
     /**
      * Store a file to shared file system. This operation fails if target file already exists.
      *
-     * @param key
-     *      Key of file on shared file system to store
+     * @param id
+     *      IDof file on shared file system to store
      * @param buffer
      *      Target {@link Buffer} to store
      */
-    Observable<Void> store(UUID key, Buffer buffer);
+    Observable<Void> store(UUID id, Buffer buffer);
 
     /**
      * Delete a file stored on shared file system.
      *
-     * @param key
-     *      Key of file on shared file system to store
+     * @param id
+     *      ID of file on shared file system to store
      */
-    Observable<Void> delete(UUID key);
+    Observable<Void> delete(UUID id);
 }

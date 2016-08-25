@@ -13,7 +13,7 @@ public class TaskCodecTest {
 
     @Test
     public void test() {
-        UUID taskId = new KeyGenerator().generateUuidV1();
+        UUID taskId = new IdGenerator().generateUuidV1();
         Task task = new Task(taskId, "file", Collections.singleton("resolution"));
         TaskCodec codec = new TaskCodec();
         Buffer buffer = Buffer.buffer();

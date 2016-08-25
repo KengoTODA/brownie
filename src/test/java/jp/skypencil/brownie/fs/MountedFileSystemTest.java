@@ -40,9 +40,9 @@ public class MountedFileSystemTest {
     @Test
     public void testStore(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(key, buffer).subscribe(onNext -> {
+        fileSystem.store(id, buffer).subscribe(onNext -> {
             context.assertNull(onNext);
         }, context::fail, () -> {
             async.complete();
@@ -52,8 +52,8 @@ public class MountedFileSystemTest {
     @Test
     public void testLoadFileWhichDoesNotExist(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
-        fileSystem.load(key).subscribe(onNext -> {
+        UUID id = UUID.randomUUID();
+        fileSystem.load(id).subscribe(onNext -> {
             context.fail();
         }, error -> {
             context.assertTrue(error instanceof FileSystemException);
@@ -67,10 +67,10 @@ public class MountedFileSystemTest {
     @Test
     public void testLoad(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(key, buffer).flatMap(v -> {
-            return fileSystem.load(key);
+        fileSystem.store(id, buffer).flatMap(v -> {
+            return fileSystem.load(id);
         }).subscribe(onNext -> {
             context.assertEquals("buffer", onNext.toString());
         }, context::fail, () -> {
@@ -81,12 +81,12 @@ public class MountedFileSystemTest {
     @Test
     public void testDelete(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(key, buffer).flatMap(v -> {
-            return fileSystem.delete(key);
+        fileSystem.store(id, buffer).flatMap(v -> {
+            return fileSystem.delete(id);
         }).flatMap(v -> {
-            return fileSystem.load(key);
+            return fileSystem.load(id);
         }).subscribe(onNext -> {
             context.fail();
         }, error -> {

@@ -13,7 +13,7 @@ import rx.Single;
 @ParametersAreNonnullByDefault
 public interface ThumbnailMetadataRegistry {
     /**
-     * Store a {@link ThumbnailMetadata} for specified video key.
+     * Store a {@link ThumbnailMetadata} for specified video ID.
      *
      * @param videoId
      *      an UUID to specify target video

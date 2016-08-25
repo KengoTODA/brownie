@@ -41,8 +41,8 @@ public class FileTransporter {
     /**
      * Download a file from shared file system, and store it to local file system.
      */
-    Observable<File> download(UUID key) {
-        return store(observableFileSystem.load(key));
+    Observable<File> download(UUID id) {
+        return store(observableFileSystem.load(id));
     }
 
     /**
@@ -67,7 +67,7 @@ public class FileTransporter {
             });
     }
 
-    Observable<Void> upload(UUID key, String name, File file, MimeType mimeType) {
+    Observable<Void> upload(UUID id, String name, File file, MimeType mimeType) {
         return rxJavaVertx.fileSystem().openObservable(file.getAbsolutePath(),
                 new OpenOptions().setRead(true))
         .flatMap(AsyncFile::toObservable)
@@ -75,16 +75,16 @@ public class FileTransporter {
             return reduced.appendBuffer(buffer);
         })
         .flatMap(reducedBuffer -> {
-            return observableFileSystem.store(key, reducedBuffer);
+            return observableFileSystem.store(id, reducedBuffer);
         }).flatMap(v -> {
-            FileMetadata metadata = new FileMetadata(key, name, mimeType, file.length(), Instant.now());
+            FileMetadata metadata = new FileMetadata(id, name, mimeType, file.length(), Instant.now());
             return observableFileMetadataRegistry.store(metadata);
         });
     }
 
-    Observable<Void> delete(UUID key) {
-        return observableFileMetadataRegistry.delete(key).flatMap(v -> {
-            return observableFileSystem.delete(key);
+    Observable<Void> delete(UUID id) {
+        return observableFileMetadataRegistry.delete(id).flatMap(v -> {
+            return observableFileSystem.delete(id);
         });
     }
 }

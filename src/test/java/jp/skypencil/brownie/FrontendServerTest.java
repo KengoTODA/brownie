@@ -80,7 +80,7 @@ public class FrontendServerTest {
                 taskRegistry,
                 mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new KeyGenerator(), 8080);
+                new IdGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
@@ -114,7 +114,7 @@ public class FrontendServerTest {
                 taskRegistry,
                 mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new KeyGenerator(), 8080);
+                new IdGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
@@ -149,7 +149,7 @@ public class FrontendServerTest {
                 taskRegistry,
                 mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new KeyGenerator(), 8080);
+                new IdGenerator(), 8080);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
