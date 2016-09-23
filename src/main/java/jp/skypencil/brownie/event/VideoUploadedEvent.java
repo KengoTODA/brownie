@@ -1,4 +1,4 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.event;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -16,7 +16,7 @@ import lombok.Value;
 
 @Value
 @ParametersAreNonnullByDefault
-public final class Task {
+public final class VideoUploadedEvent {
     @Nonnull
     private final UUID id;
     @Nonnull
@@ -26,18 +26,18 @@ public final class Task {
     @Nonnull
     private final Instant registered;
 
-    Task(UUID id, String uploadedFileName, Set<String> resolutions) {
+    public VideoUploadedEvent(UUID id, String uploadedFileName, Set<String> resolutions) {
         this(id, uploadedFileName, resolutions, Instant.now());
     }
 
-    public Task(UUID id, String uploadedFileName, Set<String> resolutions, Instant registered) {
+    public VideoUploadedEvent(UUID id, String uploadedFileName, Set<String> resolutions, Instant registered) {
         this.id = Objects.requireNonNull(id);
         this.uploadedFileName = Objects.requireNonNull(uploadedFileName);
         this.resolutions = new HashSet<>(Objects.requireNonNull(resolutions));
         this.registered = registered;
     }
 
-    String toJson() {
+    public String toJson() {
         return String.format("{\"id\":\"%s\",\"fileName\":\"%s\",\"resolutions\":[%s],\"registered\":%d}",
                 id,
                 uploadedFileName,
@@ -57,16 +57,16 @@ public final class Task {
     }
 
     @Nonnull
-    public static Task from(JsonArray array) {
+    public static VideoUploadedEvent from(JsonArray array) {
         UUID id = UUID.fromString(array.remove(0).toString());
         return from(id, array);
     }
 
     @Nonnull
-    public static Task from(UUID id, JsonArray array) {
+    public static VideoUploadedEvent from(UUID id, JsonArray array) {
         String name = array.getString(0);
         Set<String> resolutions = new HashSet<>(Arrays.asList(array.getString(1).split(",")));
         Instant generated = Instant.parse(array.getString(2) + "Z");
-        return new Task(id, name, resolutions, generated);
+        return new VideoUploadedEvent(id, name, resolutions, generated);
     }
 }

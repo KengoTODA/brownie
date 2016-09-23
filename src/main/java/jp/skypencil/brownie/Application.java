@@ -21,12 +21,13 @@ import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
 import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
-import jp.skypencil.brownie.registry.TaskRegistry;
-import jp.skypencil.brownie.registry.TaskRegistryOnPostgres;
+import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
+import jp.skypencil.brownie.registry.VideoUploadedEventRegistryOnPostgres;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistryOnPostgres;
 import lombok.extern.slf4j.Slf4j;
@@ -137,7 +138,7 @@ public class Application {
         }
         vertx = vertxFuture.result();
         vertx.eventBus().registerDefaultCodec(UUID.class, new UuidCodec());
-        vertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
+        vertx.eventBus().registerDefaultCodec(VideoUploadedEvent.class, new VideoUploadedEventCodec());
         return vertx;
     }
 
@@ -174,8 +175,8 @@ public class Application {
     }
 
     @Bean
-    public TaskRegistry taskRegistry(io.vertx.rxjava.core.Vertx vertx) {
-        return new TaskRegistryOnPostgres();
+    public VideoUploadedEventRegistry taskRegistry(io.vertx.rxjava.core.Vertx vertx) {
+        return new VideoUploadedEventRegistryOnPostgres();
     }
 
     @Bean

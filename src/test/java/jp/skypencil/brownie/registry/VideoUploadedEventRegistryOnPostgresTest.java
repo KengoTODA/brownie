@@ -16,11 +16,11 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
-import jp.skypencil.brownie.Task;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
 import rx.Observable;
 
 @RunWith(VertxUnitRunner.class)
-public class TaskRegistryOnPostgresTest {
+public class VideoUploadedEventRegistryOnPostgresTest {
     private Vertx vertx;
     private AsyncSQLClient client;
 
@@ -41,10 +41,10 @@ public class TaskRegistryOnPostgresTest {
     public void testStore(TestContext context) {
         Async async = context.async();
 
-        TaskRegistryOnPostgres registry = new TaskRegistryOnPostgres(client);
+        VideoUploadedEventRegistryOnPostgres registry = new VideoUploadedEventRegistryOnPostgres(client);
 
         UUID taskId = UUID.randomUUID();
-        Task task = new Task(taskId, "name", Collections.singleton("vga"), Instant.now());
+        VideoUploadedEvent task = new VideoUploadedEvent(taskId, "name", Collections.singleton("vga"), Instant.now());
         registry.store(task).flatMap(v -> {
             return registry.load(taskId);
         })
@@ -58,10 +58,10 @@ public class TaskRegistryOnPostgresTest {
     public void testIterate(TestContext context) {
         Async async = context.async();
 
-        TaskRegistryOnPostgres registry = new TaskRegistryOnPostgres(client);
+        VideoUploadedEventRegistryOnPostgres registry = new VideoUploadedEventRegistryOnPostgres(client);
 
-        Task task1 = new Task(UUID.randomUUID(), "task1", Collections.singleton("vga"), Instant.now());
-        Task task2 = new Task(UUID.randomUUID(), "task2", Collections.singleton("vga"), Instant.now());
+        VideoUploadedEvent task1 = new VideoUploadedEvent(UUID.randomUUID(), "task1", Collections.singleton("vga"), Instant.now());
+        VideoUploadedEvent task2 = new VideoUploadedEvent(UUID.randomUUID(), "task2", Collections.singleton("vga"), Instant.now());
         Observable.concat(
                 registry.store(task1),
                 registry.store(task2))

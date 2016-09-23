@@ -26,8 +26,9 @@ import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
-import jp.skypencil.brownie.registry.TaskRegistry;
+import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -64,7 +65,7 @@ public class FrontendServer {
     private FileTransporter fileTransporter;
 
     @Resource
-    private TaskRegistry observableTaskRegistry;
+    private VideoUploadedEventRegistry observableTaskRegistry;
 
     @Resource
     private FileMetadataRegistry observableFileMetadataRegistry;
@@ -123,7 +124,7 @@ public class FrontendServer {
             return;
         }
         Observable.from(uploadedFiles).flatMap(fileUpload -> {
-            Task task = new Task(idGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
+            VideoUploadedEvent task = new VideoUploadedEvent(idGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
             File file = new File(fileUpload.uploadedFileName());
             MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
             return Observable.merge(

@@ -6,6 +6,7 @@ import java.util.UUID;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -33,9 +34,9 @@ public class BackendServer {
 
     @PostConstruct
     void registerEventListeners() {
-        MessageConsumer<Task> consumer = rxJavaVertx.eventBus().localConsumer("file-uploaded");
+        MessageConsumer<VideoUploadedEvent> consumer = rxJavaVertx.eventBus().localConsumer("file-uploaded");
         consumer.toObservable().subscribe(message -> {
-            Task task = message.body();
+            VideoUploadedEvent task = message.body();
             fileTransporter.download(task.getId()).doOnNext(downloadedFile -> {
                 log.debug("Downloaded file (id: {}) to {}",
                         task.getId(),
@@ -53,7 +54,7 @@ public class BackendServer {
         });
     }
 
-    private Observable<File> convert(File source, String resolution, Message<Task> message) {
+    private Observable<File> convert(File source, String resolution, Message<VideoUploadedEvent> message) {
         return fileEncoder.convert(source, resolution)
                 .doOnNext(converted -> {
                     log.info("Converted file (path: {}, resolution: {}) to {}",
@@ -72,7 +73,7 @@ public class BackendServer {
     }
 
     private Observable<Void> upload(File source, String fileName,
-            Message<Task> message) {
+            Message<VideoUploadedEvent> message) {
         UUID id = idGenerator.generateUuidV1();
         return fileTransporter.upload(id, fileName,
                 source, MimeType.valueOf("video/mpeg")).doOnError(error -> {
