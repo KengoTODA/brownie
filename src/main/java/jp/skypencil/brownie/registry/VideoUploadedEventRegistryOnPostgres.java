@@ -24,7 +24,7 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
     public Observable<VideoUploadedEvent> iterate() {
         return postgreSQLClient.getConnectionObservable().flatMap(con -> {
             return con.queryObservable(
-                    "SELECT id, uploaded_file_name, resolutions, generated FROM task")
+                    "SELECT id, uploaded_file_name, resolutions, generated FROM video_uploaded_event")
                     .doAfterTerminate(con::close);
         }).flatMap(selected -> {
             Iterable<VideoUploadedEvent> iterable = selected.getResults().stream()
@@ -34,25 +34,25 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
     }
 
     @Override
-    public Observable<Object> store(VideoUploadedEvent task) {
+    public Observable<Object> store(VideoUploadedEvent event) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
-                return con.queryWithParamsObservable("INSERT INTO task (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", task.toJsonArray())
+                return con.queryWithParamsObservable("INSERT INTO video_uploaded_event (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", event.toJsonArray())
                         .doAfterTerminate(con::close);
             });
     }
 
     @Override
-    public Observable<Optional<VideoUploadedEvent>> load(UUID taskId) {
+    public Observable<Optional<VideoUploadedEvent>> load(UUID id) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
-                JsonArray params = new JsonArray().add(taskId.toString());
-                return con.queryWithParamsObservable("SELECT uploaded_file_name, resolutions, generated FROM task WHERE id = ?", params)
+                JsonArray params = new JsonArray().add(id.toString());
+                return con.queryWithParamsObservable("SELECT uploaded_file_name, resolutions, generated FROM video_uploaded_event WHERE id = ?", params)
                         .doAfterTerminate(con::close);
             }).map(selected -> {
                 final Optional<VideoUploadedEvent> result;
                 if (selected.getResults().size() == 1) {
-                    result = Optional.of(VideoUploadedEvent.from(taskId, selected.getResults().get(0)));
+                    result = Optional.of(VideoUploadedEvent.from(id, selected.getResults().get(0)));
                 } else {
                     result = Optional.empty();
                 }

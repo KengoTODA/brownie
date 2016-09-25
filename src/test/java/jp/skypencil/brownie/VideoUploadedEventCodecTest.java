@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import static com.google.common.truth.Truth.assertThat;
 
-public class TaskCodecTest {
+public class VideoUploadedEventCodecTest {
 
     @Test
     public void test() {

@@ -22,17 +22,17 @@ public interface VideoUploadedEventRegistry {
 
     /**
      * Store a {@link VideoUploadedEvent} to registry. This method fails if given {@link VideoUploadedEvent} is already registered.
-     * @param task
-     *      Task to register
+     * @param event
+     *      Event to register
      */
     @Nonnull
-    Observable<Object> store(VideoUploadedEvent task);
+    Observable<Object> store(VideoUploadedEvent event);
 
     /**
      * Load a {@link VideoUploadedEvent} from registry.
-     * @param taskId
+     * @param id
      *      ID of target {@link VideoUploadedEvent} to load
      */
     @Nonnull
-    Observable<Optional<VideoUploadedEvent>> load(UUID taskId);
+    Observable<Optional<VideoUploadedEvent>> load(UUID id);
 }
