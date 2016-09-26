@@ -44,7 +44,7 @@ public class ThumbnailServer {
         MessageConsumer<UUID> consumer = rxJavaVertx.eventBus().consumer("generate-thumbnail");
         consumer.toObservable().map(Message::body).subscribe(videoId -> {
             log.info("Received request to generate thumbnail for videoId {}", videoId);
-            fileTransporter.download(videoId).toSingle()
+            fileTransporter.download(videoId)
                 .flatMap(video -> {
                     return thumbnailGenerator.generate(video, 1_000);
                 })
@@ -75,8 +75,7 @@ public class ThumbnailServer {
                 metadata.getId(),
                 "Thumbnail.jpg",
                 tuple._1(), metadata.getMimeType())
-               .map(v -> metadata)
-               .toSingle();
+               .map(v -> metadata);
     }
 
     Single<Void> register(@FileId UUID videoId, ThumbnailMetadata metadata) {

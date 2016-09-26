@@ -44,9 +44,8 @@ public class MountedFileSystemTest {
         Buffer buffer = Buffer.buffer("buffer");
         fileSystem.store(id, buffer).subscribe(onNext -> {
             context.assertNull(onNext);
-        }, context::fail, () -> {
             async.complete();
-        });
+        }, context::fail);
     }
 
     @Test
@@ -69,7 +68,7 @@ public class MountedFileSystemTest {
         Async async = context.async();
         UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(id, buffer).flatMap(v -> {
+        fileSystem.store(id, buffer).toObservable().flatMap(v -> {
             return fileSystem.load(id);
         }).subscribe(onNext -> {
             context.assertEquals("buffer", onNext.toString());
@@ -85,7 +84,7 @@ public class MountedFileSystemTest {
         Buffer buffer = Buffer.buffer("buffer");
         fileSystem.store(id, buffer).flatMap(v -> {
             return fileSystem.delete(id);
-        }).flatMap(v -> {
+        }).toObservable().flatMap(v -> {
             return fileSystem.load(id);
         }).subscribe(onNext -> {
             context.fail();

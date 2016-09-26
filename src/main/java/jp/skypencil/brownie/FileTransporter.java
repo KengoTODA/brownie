@@ -21,6 +21,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import rx.Observable;
+import rx.Single;
 
 @Component
 @ParametersAreNonnullByDefault
@@ -41,17 +42,18 @@ public class FileTransporter {
     /**
      * Download a file from shared file system, and store it to local file system.
      */
-    Observable<File> download(UUID id) {
+    Single<File> download(UUID id) {
         return store(observableFileSystem.load(id));
     }
 
     /**
      * Store data to local file system, and return {@link File} instance
      */
-    private Observable<File> store(Observable<Buffer> data) {
+    private Single<File> store(Observable<Buffer> data) {
         String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
         return rxJavaVertx.fileSystem()
             .openObservable(downloadedFile, new OpenOptions().setWrite(true))
+            .toSingle()
             .flatMap(opened -> {
                 CompletableFuture<File> future = new CompletableFuture<>();
                 data.subscribe(buffer -> {
@@ -63,17 +65,18 @@ public class FileTransporter {
                         opened.close();
                         future.complete(new File(downloadedFile));
                     });
-                return Observable.from(future);
+                return Single.from(future);
             });
     }
 
-    Observable<Void> upload(UUID id, String name, File file, MimeType mimeType) {
+    Single<Void> upload(UUID id, String name, File file, MimeType mimeType) {
         return rxJavaVertx.fileSystem().openObservable(file.getAbsolutePath(),
                 new OpenOptions().setRead(true))
         .flatMap(AsyncFile::toObservable)
         .reduce(Buffer.buffer(), (reduced, buffer) -> {
             return reduced.appendBuffer(buffer);
         })
+        .toSingle()
         .flatMap(reducedBuffer -> {
             return observableFileSystem.store(id, reducedBuffer);
         }).flatMap(v -> {
@@ -82,7 +85,7 @@ public class FileTransporter {
         });
     }
 
-    Observable<Void> delete(UUID id) {
+    Single<Void> delete(UUID id) {
         return observableFileMetadataRegistry.delete(id).flatMap(v -> {
             return observableFileSystem.delete(id);
         });

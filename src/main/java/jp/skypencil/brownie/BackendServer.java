@@ -13,6 +13,7 @@ import javax.annotation.Resource;
 
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
+import rx.Single;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
@@ -37,26 +38,26 @@ public class BackendServer {
         MessageConsumer<VideoUploadedEvent> consumer = rxJavaVertx.eventBus().localConsumer("file-uploaded");
         consumer.toObservable().subscribe(message -> {
             VideoUploadedEvent task = message.body();
-            fileTransporter.download(task.getId()).doOnNext(downloadedFile -> {
+            fileTransporter.download(task.getId()).doOnSuccess(downloadedFile -> {
                 log.debug("Downloaded file (id: {}) to {}",
                         task.getId(),
                         downloadedFile);
             }).doOnError(error -> {
                 log.error("Failed to download file (id: {}) from distributed file system", task.getId(), error);
                 message.fail(1, "Failed to download file from distributed file system");
-            }).flatMap(downloadedFile -> {
+            }).toObservable().flatMap(downloadedFile -> {
                 return Observable.from(task.getResolutions()).flatMap(resolution -> {
-                    return convert(downloadedFile, resolution, message);
+                    return convert(downloadedFile, resolution, message).toObservable();
                 });
             }).flatMap(convertedFile -> {
-                return upload(convertedFile, task.getUploadedFileName(), message);
+                return upload(convertedFile, task.getUploadedFileName(), message).toObservable();
             }).subscribe();
         });
     }
 
-    private Observable<File> convert(File source, String resolution, Message<VideoUploadedEvent> message) {
+    private Single<File> convert(File source, String resolution, Message<VideoUploadedEvent> message) {
         return fileEncoder.convert(source, resolution)
-                .doOnNext(converted -> {
+                .doOnSuccess(converted -> {
                     log.info("Converted file (path: {}, resolution: {}) to {}",
                             source.getAbsolutePath(),
                             resolution,
@@ -72,7 +73,7 @@ public class BackendServer {
                 });
     }
 
-    private Observable<Void> upload(File source, String fileName,
+    private Single<Void> upload(File source, String fileName,
             Message<VideoUploadedEvent> message) {
         UUID id = idGenerator.generateUuidV1();
         return fileTransporter.upload(id, fileName,
@@ -80,7 +81,7 @@ public class BackendServer {
                     log.error("Failed to upload file ({})",
                             source.getAbsolutePath(), error);
                     message.fail(3, "Failed to upload file");
-                }).doOnNext(v -> {
+                }).doOnSuccess(v -> {
                     log.info("Uploaded file ({})", source.getAbsolutePath());
                     rxJavaVertx.eventBus().send("generate-thumbnail", id);
                 });

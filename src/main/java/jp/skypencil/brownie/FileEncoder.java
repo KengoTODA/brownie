@@ -4,7 +4,7 @@ import java.io.File;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import rx.Observable;
+import rx.Single;
 
 /**
  * Interface to encode video file.
@@ -21,5 +21,5 @@ public interface FileEncoder {
      *          Callback which is called after conversion is finished.
      *          Its result is a {@link File} instance which stores converted data.
      */
-    Observable<File> convert(File targetFile, String resolution);
+    Single<File> convert(File targetFile, String resolution);
 }

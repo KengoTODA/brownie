@@ -14,7 +14,7 @@ import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import lombok.extern.slf4j.Slf4j;
-import rx.Observable;
+import rx.Single;
 
 /**
  * An {@link FileEncoder} implementation which depends on FFmpeg.
@@ -31,12 +31,12 @@ public class FileEncoderFFmpeg implements FileEncoder {
     private SharedFileSystem fileSystem;
 
     @Override
-    public Observable<File> convert(File targetFile, String resolution) {
+    public Single<File> convert(File targetFile, String resolution) {
         Objects.requireNonNull(targetFile);
         Objects.requireNonNull(resolution);
         final int processors = Runtime.getRuntime().availableProcessors();
         return rxJavaVertx.executeBlockingObservable(
-                convert(targetFile, resolution, processors));
+                convert(targetFile, resolution, processors)).toSingle();
     }
 
     private Handler<Future<File>> convert(File targetFile,

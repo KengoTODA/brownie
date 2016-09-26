@@ -7,6 +7,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
 import rx.Observable;
+import rx.Single;
 
 /**
  * An API to persist/load {@link FileMetadata}.
@@ -23,26 +24,26 @@ public interface FileMetadataRegistry {
      * @param metadata
      *      FileMetadata to store
      */
-    Observable<Void> store(FileMetadata metadata);
+    Single<Void> store(FileMetadata metadata);
 
     /**
      * Update a {@link FileMetadata} in registry. This method fails is given {@link FileMetadata} is not registered yet.
      * @param metadata
      *      FileMetadata to update
      */
-    Observable<Void> update(FileMetadata metadata);
+    Single<Void> update(FileMetadata metadata);
 
     /**
      * Load a {@link FileMetadata} from registry.
      * @param fileId
      *      ID of target {@link FileMetadata} to load
      */
-    Observable<FileMetadata> load(@FileId UUID fileId);
+    Single<FileMetadata> load(@FileId UUID fileId);
 
     /**
      * Delete a {@FileMetadata} from registry.
      * @param fileId
      *      ID of target {@link FileMetadata} to load
      */
-    Observable<Void> delete(@FileId UUID fileId);
+    Single<Void> delete(@FileId UUID fileId);
 }

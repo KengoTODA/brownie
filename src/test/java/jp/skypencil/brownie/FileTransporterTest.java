@@ -25,6 +25,7 @@ import io.vertx.rxjava.core.buffer.Buffer;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import rx.Observable;
+import rx.Single;
 
 @RunWith(VertxUnitRunner.class)
 public class FileTransporterTest {
@@ -53,8 +54,8 @@ public class FileTransporterTest {
 
         UUID id = UUID.randomUUID();
         File file = folder.newFile();
-        doReturn(Observable.just((Void) null)).when(fileSystem).store(eq(id), any());
-        doReturn(Observable.just((Void) null)).when(fileMetadataRegistry).store(any());
+        doReturn(Single.just((Void) null)).when(fileSystem).store(eq(id), any());
+        doReturn(Single.just((Void) null)).when(fileMetadataRegistry).store(any());
         transporter.upload(id, "name", file, MimeType.valueOf("text/plain")).subscribe(v -> {
             Mockito.verify(fileSystem).store(eq(id), any());
             Mockito.verify(fileMetadataRegistry).store(any());
@@ -70,8 +71,8 @@ public class FileTransporterTest {
         FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
         UUID id = UUID.randomUUID();
-        doReturn(Observable.just((Void) null)).when(fileSystem).delete(eq(id));
-        doReturn(Observable.just((Void) null)).when(fileMetadataRegistry).delete(eq(id));
+        doReturn(Single.just((Void) null)).when(fileSystem).delete(eq(id));
+        doReturn(Single.just((Void) null)).when(fileMetadataRegistry).delete(eq(id));
         transporter.delete(id).subscribe(v -> {
             Mockito.verify(fileSystem).delete(eq(id));
             Mockito.verify(fileMetadataRegistry).delete(eq(id));

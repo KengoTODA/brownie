@@ -128,8 +128,8 @@ public class FrontendServer {
             File file = new File(fileUpload.uploadedFileName());
             MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
             return Observable.merge(
-                    fileTransporter.upload(task.getId(), fileUpload.fileName(), file, mimeType),
-                    observableTaskRegistry.store(task)
+                    fileTransporter.upload(task.getId(), fileUpload.fileName(), file, mimeType).toObservable(),
+                    observableTaskRegistry.store(task).toObservable()
             ).doOnCompleted(() -> {
                 rxJavaVertx.eventBus().send("file-uploaded", task);
             });
@@ -193,7 +193,7 @@ public class FrontendServer {
         thumbnailMetadataRegistry.search(videoId).first().toSingle()
             .flatMap(thumbnail -> {
                 UUID thumbnailId = thumbnail.getId();
-                return fileTransporter.download(thumbnailId).toSingle();
+                return fileTransporter.download(thumbnailId);
             })
             .flatMap(thumbnailFile -> {
                 return response.sendFileObservable(thumbnailFile.getAbsolutePath()).toSingle();
@@ -209,12 +209,11 @@ public class FrontendServer {
     private void deleteFile(RoutingContext ctx, String fileId) {
         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
         UUID id = UUID.fromString(fileId);
-        fileTransporter.delete(id).subscribe(next -> {},
+        fileTransporter.delete(id).subscribe(deleted -> {
+                    response.end("deleted");
+                },
                 error -> {
                     response.setStatusCode(500).end("Failed to load file");
-                },
-                () -> {
-                    response.end("deleted");
                 });
     }
 

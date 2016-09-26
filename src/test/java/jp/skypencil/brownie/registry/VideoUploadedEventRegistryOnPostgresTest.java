@@ -49,7 +49,7 @@ public class VideoUploadedEventRegistryOnPostgresTest {
             return registry.load(taskId);
         })
         .subscribe(loaded -> {
-            context.assertEquals(loaded.get(), task);
+            context.assertEquals(loaded, task);
             async.complete();
         });
     }
@@ -63,8 +63,8 @@ public class VideoUploadedEventRegistryOnPostgresTest {
         VideoUploadedEvent task1 = new VideoUploadedEvent(UUID.randomUUID(), "task1", Collections.singleton("vga"), Instant.now());
         VideoUploadedEvent task2 = new VideoUploadedEvent(UUID.randomUUID(), "task2", Collections.singleton("vga"), Instant.now());
         Observable.concat(
-                registry.store(task1),
-                registry.store(task2))
+                registry.store(task1).toObservable(),
+                registry.store(task2).toObservable())
         .all(v -> true)
         .flatMap(b -> {
             return registry.iterate().filter(task -> {

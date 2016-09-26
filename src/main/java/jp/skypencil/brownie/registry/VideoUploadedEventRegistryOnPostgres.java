@@ -1,6 +1,5 @@
 package jp.skypencil.brownie.registry;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -13,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import rx.Observable;
+import rx.Single;
 
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PACKAGE) // only for test
@@ -34,29 +34,30 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
     }
 
     @Override
-    public Observable<Object> store(VideoUploadedEvent event) {
+    public Single<Void> store(VideoUploadedEvent event) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
                 return con.queryWithParamsObservable("INSERT INTO video_uploaded_event (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", event.toJsonArray())
                         .doAfterTerminate(con::close);
-            });
+            })
+            .map(rs -> {
+                return (Void) null;
+            })
+            .toSingle();
     }
 
     @Override
-    public Observable<Optional<VideoUploadedEvent>> load(UUID id) {
+    public Single<VideoUploadedEvent> load(UUID id) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
                 JsonArray params = new JsonArray().add(id.toString());
                 return con.queryWithParamsObservable("SELECT uploaded_file_name, resolutions, generated FROM video_uploaded_event WHERE id = ?", params)
                         .doAfterTerminate(con::close);
             }).map(selected -> {
-                final Optional<VideoUploadedEvent> result;
                 if (selected.getResults().size() == 1) {
-                    result = Optional.of(VideoUploadedEvent.from(id, selected.getResults().get(0)));
-                } else {
-                    result = Optional.empty();
+                    return VideoUploadedEvent.from(id, selected.getResults().get(0));
                 }
-                return result;
-            });
+                throw new IllegalArgumentException("Event not found with ID " + id);
+            }).toSingle();
     }
 }

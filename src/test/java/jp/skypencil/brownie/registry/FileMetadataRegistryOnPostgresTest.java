@@ -49,7 +49,7 @@ public class FileMetadataRegistryOnPostgresTest {
         }).subscribe(loaded -> {
             context.assertEquals(metadata, loaded);
             async.complete();
-        }, context::fail, async::complete);
+        }, context::fail);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class FileMetadataRegistryOnPostgresTest {
             context.assertNotEquals(metadata, loaded);
             context.assertEquals(loaded.getName(), "updated");
             async.complete();
-        }, context::fail, async::complete);
+        }, context::fail);
     }
 
     @Test
@@ -122,7 +122,7 @@ public class FileMetadataRegistryOnPostgresTest {
         }, error -> {
             context.assertTrue(error instanceof IllegalArgumentException);
             async.complete();
-        }, context::fail);
+        });
     }
 
     @Test
@@ -134,7 +134,7 @@ public class FileMetadataRegistryOnPostgresTest {
         }, error -> {
             context.assertTrue(error instanceof IllegalArgumentException);
             async.complete();
-        }, context::fail);
+        });
     }
 
     @Test
@@ -142,7 +142,7 @@ public class FileMetadataRegistryOnPostgresTest {
         UUID fileId = UUID.randomUUID();
         Async async = context.async(2);
         FileMetadata metadata = new FileMetadata(fileId, "name", MimeType.valueOf("text/plain"), 6, Instant.now());
-        registry.store(metadata).flatMap(v -> {
+        registry.store(metadata).toObservable().flatMap(v -> {
             return registry.iterate();
         }).filter(iterated -> {
             return iterated.equals(metadata);

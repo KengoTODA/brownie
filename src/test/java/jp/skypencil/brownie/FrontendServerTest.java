@@ -72,10 +72,10 @@ public class FrontendServerTest {
         FileTransporter fileTransporter = mock(FileTransporter.class);
         VideoUploadedEventRegistry taskRegistry = mock(VideoUploadedEventRegistry.class);
         Future<Void> uploadedFuture = Future.future();
-        doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
+        doReturn(uploadedFuture.setHandlerObservable().toSingle()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
-        doReturn(storedFuture.setHandlerObservable()).when(taskRegistry).store(any(VideoUploadedEvent.class));
+        doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
         FrontendServer server = new FrontendServer(vertx,
                 fileTransporter,
                 taskRegistry,
@@ -106,10 +106,10 @@ public class FrontendServerTest {
         FileTransporter fileTransporter = mock(FileTransporter.class);
         VideoUploadedEventRegistry taskRegistry = mock(VideoUploadedEventRegistry.class);
         Future<Void> uploadedFuture = Future.future();
-        doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
+        doReturn(uploadedFuture.setHandlerObservable().toSingle()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
-        doReturn(storedFuture.setHandlerObservable()).when(taskRegistry).store(any(VideoUploadedEvent.class));
+        doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
         FrontendServer server = new FrontendServer(vertx,
                 fileTransporter,
                 taskRegistry,
@@ -141,10 +141,10 @@ public class FrontendServerTest {
         FileTransporter fileTransporter = mock(FileTransporter.class);
         VideoUploadedEventRegistry taskRegistry = mock(VideoUploadedEventRegistry.class);
         Future<Void> uploadedFuture = Future.future();
-        doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
+        doReturn(uploadedFuture.setHandlerObservable().toSingle()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
-        doReturn(storedFuture.setHandlerObservable()).when(taskRegistry).store(any(VideoUploadedEvent.class));
+        doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
         FrontendServer server = new FrontendServer(vertx,
                 fileTransporter,
                 taskRegistry,

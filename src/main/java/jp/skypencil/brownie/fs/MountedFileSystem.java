@@ -7,6 +7,7 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
+import rx.Single;
 
 @RequiredArgsConstructor
 public class MountedFileSystem implements SharedFileSystem {
@@ -21,14 +22,14 @@ public class MountedFileSystem implements SharedFileSystem {
     }
 
     @Override
-    public Observable<Void> store(UUID id, Buffer buffer) {
+    public Single<Void> store(UUID id, Buffer buffer) {
         String path = baseDir + "/" + Objects.requireNonNull(id);
-        return rxJavaVertx.fileSystem().writeFileObservable(path, buffer);
+        return rxJavaVertx.fileSystem().writeFileObservable(path, buffer).toSingle();
     }
 
     @Override
-    public Observable<Void> delete(UUID id) {
+    public Single<Void> delete(UUID id) {
         String path = baseDir + "/" + Objects.requireNonNull(id);
-        return rxJavaVertx.fileSystem().deleteObservable(path);
+        return rxJavaVertx.fileSystem().deleteObservable(path).toSingle();
     }
 }

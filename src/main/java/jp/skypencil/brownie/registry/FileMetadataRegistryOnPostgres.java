@@ -19,6 +19,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
+import rx.Single;
 
 @RequiredArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PACKAGE) // only for Unit test
@@ -46,15 +47,16 @@ public class FileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Observable<Void> store(FileMetadata metadata) {
+    public Single<Void> store(FileMetadata metadata) {
         return postgreSQLClient.getConnectionObservable()
+                .toSingle()
                 .flatMap(con -> {
                     return storeInternal(con, metadata)
                             .doAfterTerminate(con::close);
                 });
     }
 
-    private Observable<Void> storeInternal(@WillNotClose SQLConnection con, FileMetadata metadata) {
+    private Single<Void> storeInternal(@WillNotClose SQLConnection con, FileMetadata metadata) {
         return con.setAutoCommitObservable(false)
                 .flatMap(v -> {
                     return con.queryWithParamsObservable(
@@ -76,11 +78,11 @@ public class FileMetadataRegistryOnPostgres
                     }
                 }).flatMap(ur-> {
                     return con.commitObservable();
-                });
+                }).toSingle();
     }
 
     @Override
-    public Observable<Void> update(FileMetadata metadata) {
+    public Single<Void> update(FileMetadata metadata) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
                 JsonArray params = new JsonArray()
@@ -91,19 +93,19 @@ public class FileMetadataRegistryOnPostgres
                         .add(metadata.getFileId().toString());
                 return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params)
                         .doAfterTerminate(con::close);
-            }).map(ur -> {
+            }).toSingle().map(ur -> {
                 return null;
             });
     }
 
     @Override
-    public Observable<FileMetadata> load(UUID fileId) {
+    public Single<FileMetadata> load(UUID fileId) {
         return postgreSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.queryWithParamsObservable("SELECT name, mime_type, content_length, generated FROM file_metadata WHERE id = ?",
                             new JsonArray().add(fileId.toString()))
                             .doAfterTerminate(con::close);
-                }).map(rs -> {
+                }).toSingle().map(rs -> {
                     List<JsonArray> result = rs.getResults();
                     if (result.isEmpty()) {
                         throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
@@ -120,12 +122,12 @@ public class FileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Observable<Void> delete(UUID fileId) {
+    public Single<Void> delete(UUID fileId) {
         return postgreSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.updateWithParamsObservable("DELETE FROM file_metadata WHERE id = ?", new JsonArray().add(fileId.toString()))
                     .doAfterTerminate(con::close);
-                }).map(rs -> {
+                }).toSingle().map(rs -> {
                     if (rs.getUpdated() == 0) {
                         throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
                     }
