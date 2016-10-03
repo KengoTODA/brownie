@@ -24,7 +24,7 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
     public Observable<VideoUploadedEvent> iterate() {
         return postgreSQLClient.getConnectionObservable().flatMap(con -> {
             return con.queryObservable(
-                    "SELECT id, uploaded_file_name, resolutions, generated FROM video_uploaded_event")
+                    "SELECT id, uploaded_file_name, resolutions, generated FROM video_uploaded_event ORDER BY generated")
                     .doAfterTerminate(con::close);
         }).flatMap(selected -> {
             Iterable<VideoUploadedEvent> iterable = selected.getResults().stream()
@@ -34,16 +34,19 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
     }
 
     @Override
-    public Single<Void> store(VideoUploadedEvent event) {
+    public Single<VideoUploadedEvent> store(VideoUploadedEvent event) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
-                return con.queryWithParamsObservable("INSERT INTO video_uploaded_event (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", event.toJsonArray())
+                return con.updateWithParamsObservable("INSERT INTO video_uploaded_event (id, uploaded_file_name, resolutions, generated) VALUES (?, ?, ?, ?)", event.toJsonArray())
                         .doAfterTerminate(con::close);
             })
-            .map(rs -> {
-                return (Void) null;
-            })
-            .toSingle();
+            .toSingle()
+            .map(ur -> {
+                if (ur.getUpdated() != 1) {
+                    throw new IllegalArgumentException("Failed to store given video uploaded event: " + event);
+                }
+                return event;
+            });
     }
 
     @Override
@@ -57,7 +60,7 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
                 if (selected.getResults().size() == 1) {
                     return VideoUploadedEvent.from(id, selected.getResults().get(0));
                 }
-                throw new IllegalArgumentException("Event not found with ID " + id);
+                throw new IllegalArgumentException("Event not found with given ID: " + id);
             }).toSingle();
     }
 }

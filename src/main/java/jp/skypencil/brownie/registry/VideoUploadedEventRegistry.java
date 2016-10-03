@@ -24,14 +24,16 @@ public interface VideoUploadedEventRegistry {
      * Store a {@link VideoUploadedEvent} to registry. This method fails if given {@link VideoUploadedEvent} is already registered.
      * @param event
      *      Event to register
+     * @return a {@link Single} which emits stored event, or which makes an error notification
      */
     @Nonnull
-    Single<Void> store(VideoUploadedEvent event);
+    Single<VideoUploadedEvent> store(VideoUploadedEvent event);
 
     /**
      * Load a {@link VideoUploadedEvent} from registry.
      * @param id
      *      ID of target {@link VideoUploadedEvent} to load
+     * @return a {@link Single} which emits loaded metadata, or which makes an error notification
      */
     @Nonnull
     Single<VideoUploadedEvent> load(UUID id);
