@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
+import io.vertx.rxjava.core.file.FileSystem;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
@@ -22,14 +23,23 @@ public class MountedFileSystem implements SharedFileSystem {
     }
 
     @Override
-    public Single<Void> store(UUID id, Buffer buffer) {
+    public Single<UUID> store(UUID id, Buffer buffer) {
         String path = baseDir + "/" + Objects.requireNonNull(id);
-        return rxJavaVertx.fileSystem().writeFileObservable(path, buffer).toSingle();
+        FileSystem fileSystem = rxJavaVertx.fileSystem();
+
+        return fileSystem.existsObservable(path).toSingle().flatMap(found -> {
+            if (found.booleanValue()) {
+                throw new IllegalArgumentException("Specified ID is already used: " + id);
+            }
+            return fileSystem.writeFileObservable(path, buffer).toSingle()
+                    .map(v -> id);
+        });
     }
 
     @Override
-    public Single<Void> delete(UUID id) {
+    public Single<UUID> delete(UUID id) {
         String path = baseDir + "/" + Objects.requireNonNull(id);
-        return rxJavaVertx.fileSystem().deleteObservable(path).toSingle();
+        return rxJavaVertx.fileSystem().deleteObservable(path).toSingle()
+                .map(v -> id);
     }
 }

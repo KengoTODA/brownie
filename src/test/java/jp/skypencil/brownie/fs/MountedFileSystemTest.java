@@ -43,7 +43,7 @@ public class MountedFileSystemTest {
         UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
         fileSystem.store(id, buffer).subscribe(onNext -> {
-            context.assertNull(onNext);
+            context.assertEquals(id, onNext);
             async.complete();
         }, context::fail);
     }

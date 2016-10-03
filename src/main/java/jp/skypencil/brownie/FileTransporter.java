@@ -85,7 +85,7 @@ public class FileTransporter {
         });
     }
 
-    Single<Void> delete(UUID id) {
+    Single<@FileId UUID> delete(@FileId UUID id) {
         return observableFileMetadataRegistry.delete(id).flatMap(v -> {
             return observableFileSystem.delete(id);
         });
