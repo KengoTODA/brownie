@@ -47,13 +47,14 @@ public class FileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Single<Void> store(FileMetadata metadata) {
+    public Single<FileMetadata> store(FileMetadata metadata) {
         return postgreSQLClient.getConnectionObservable()
                 .toSingle()
                 .flatMap(con -> {
                     return storeInternal(con, metadata)
                             .doAfterTerminate(con::close);
-                });
+                })
+                .map(v -> metadata);
     }
 
     private Single<Void> storeInternal(@WillNotClose SQLConnection con, FileMetadata metadata) {
@@ -82,7 +83,7 @@ public class FileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Single<Void> update(FileMetadata metadata) {
+    public Single<FileMetadata> update(FileMetadata metadata) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
                 JsonArray params = new JsonArray()
@@ -94,7 +95,7 @@ public class FileMetadataRegistryOnPostgres
                 return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params)
                         .doAfterTerminate(con::close);
             }).toSingle().map(ur -> {
-                return null;
+                return metadata;
             });
     }
 
@@ -122,7 +123,7 @@ public class FileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Single<Void> delete(UUID fileId) {
+    public Single<UUID> delete(UUID fileId) {
         return postgreSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.updateWithParamsObservable("DELETE FROM file_metadata WHERE id = ?", new JsonArray().add(fileId.toString()))
@@ -131,7 +132,7 @@ public class FileMetadataRegistryOnPostgres
                     if (rs.getUpdated() == 0) {
                         throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
                     }
-                    return null;
+                    return fileId;
                 });
     }
 }

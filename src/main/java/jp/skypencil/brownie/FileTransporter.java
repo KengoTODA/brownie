@@ -69,7 +69,7 @@ public class FileTransporter {
             });
     }
 
-    Single<Void> upload(UUID id, String name, File file, MimeType mimeType) {
+    Single<FileMetadata> upload(UUID id, String name, File file, MimeType mimeType) {
         return rxJavaVertx.fileSystem().openObservable(file.getAbsolutePath(),
                 new OpenOptions().setRead(true))
         .flatMap(AsyncFile::toObservable)

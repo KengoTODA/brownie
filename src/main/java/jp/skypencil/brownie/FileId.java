@@ -1,8 +1,10 @@
 package jp.skypencil.brownie;
 
 import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.UUID;
 
 import javax.annotation.meta.TypeQualifier;
@@ -17,6 +19,7 @@ import javax.annotation.meta.When;
 @Documented
 @TypeQualifier(applicableTo = UUID.class)
 @Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE_USE)
 public @interface FileId {
     When when() default When.ALWAYS;
 

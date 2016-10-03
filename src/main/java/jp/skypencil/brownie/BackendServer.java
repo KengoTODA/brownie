@@ -73,7 +73,7 @@ public class BackendServer {
                 });
     }
 
-    private Single<Void> upload(File source, String fileName,
+    private Single<FileMetadata> upload(File source, String fileName,
             Message<VideoUploadedEvent> message) {
         UUID id = idGenerator.generateUuidV1();
         return fileTransporter.upload(id, fileName,
