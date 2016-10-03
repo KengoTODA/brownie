@@ -19,7 +19,7 @@ public class ThumbnailMetadataRegistryOnPostgres
     private AsyncSQLClient asyncSQLClient;
 
     @Override
-    public Single<Void> store(UUID videoId, ThumbnailMetadata metadata) {
+    public Single<ThumbnailMetadata> store(ThumbnailMetadata metadata) {
         return asyncSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.updateWithParamsObservable(SQL_TO_INSERT, metadata.toJsonArray())
@@ -27,7 +27,10 @@ public class ThumbnailMetadataRegistryOnPostgres
                 })
                 .toSingle()
                 .map(ur -> {
-                    return null;
+                    if (ur.getUpdated() != 1) {
+                        throw new IllegalArgumentException("Failed to store given thumbnail metadata: " + metadata);
+                    }
+                    return metadata;
                 });
     }
 

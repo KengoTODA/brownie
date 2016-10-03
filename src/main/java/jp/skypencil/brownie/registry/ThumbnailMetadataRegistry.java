@@ -5,7 +5,6 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.ThumbnailMetadata;
 import rx.Observable;
 import rx.Single;
@@ -13,17 +12,15 @@ import rx.Single;
 @ParametersAreNonnullByDefault
 public interface ThumbnailMetadataRegistry {
     /**
-     * Store a {@link ThumbnailMetadata} for specified video ID.
+     * Store a {@link ThumbnailMetadata}.
      *
-     * @param videoId
-     *      an UUID to specify target video
      * @param metadata
      *      a {@link ThumbnailMetadata} to store into database
-     * @return
+     * @return a {@link Single} which emits stored metadata, or which makes an error notification
      */
     @Nonnull
-    Single<Void> store(@FileId UUID videoId, ThumbnailMetadata metadata);
+    Single<ThumbnailMetadata> store(ThumbnailMetadata metadata);
 
     @Nonnull
-    Observable<ThumbnailMetadata> search(@FileId UUID videoId);
+    Observable<ThumbnailMetadata> search(UUID videoId);
 }

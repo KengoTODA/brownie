@@ -52,9 +52,7 @@ public class ThumbnailServer {
                     return generateMetadata(Tuple2.apply(thumbnail, videoId));
                 })
                 .flatMap(this::upload)
-                .map(metadata -> {
-                    return register(videoId, metadata);
-                })
+                .map(thumbnailMetadataRegistry::store)
                 .subscribe();
         });
     }
@@ -76,9 +74,5 @@ public class ThumbnailServer {
                 "Thumbnail.jpg",
                 tuple._1(), metadata.getMimeType())
                .map(v -> metadata);
-    }
-
-    Single<Void> register(@FileId UUID videoId, ThumbnailMetadata metadata) {
-        return thumbnailMetadataRegistry.store(videoId, metadata);
     }
 }
