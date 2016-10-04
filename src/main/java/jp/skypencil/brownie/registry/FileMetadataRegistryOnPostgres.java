@@ -30,7 +30,7 @@ public class FileMetadataRegistryOnPostgres
     public Observable<FileMetadata> iterate() {
         return postgreSQLClient.getConnectionObservable()
         .flatMap(con -> {
-            return con.queryObservable("SELECT id, name, mime_type, content_length, generated from file_metadata")
+            return con.queryObservable("SELECT id, name, mime_type, content_length, generated from file_metadata ORDER BY generated DESC")
                     .doAfterTerminate(con::close);
         }).flatMap(rs -> {
             List<FileMetadata> iterable = rs.getResults().stream().map(json -> {
