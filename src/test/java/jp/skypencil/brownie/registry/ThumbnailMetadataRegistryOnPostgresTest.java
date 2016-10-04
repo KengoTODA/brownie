@@ -6,7 +6,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.util.MimeType;
 
 import com.google.common.base.Objects;
 
@@ -17,6 +16,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
+import jp.skypencil.brownie.MimeType;
 import jp.skypencil.brownie.ThumbnailMetadata;
 
 @RunWith(VertxUnitRunner.class)

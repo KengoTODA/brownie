@@ -8,13 +8,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.annotation.WillNotClose;
 
-import org.springframework.util.MimeType;
-
 import io.vertx.core.json.JsonArray;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.sql.SQLConnection;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
+import jp.skypencil.brownie.MimeType;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;

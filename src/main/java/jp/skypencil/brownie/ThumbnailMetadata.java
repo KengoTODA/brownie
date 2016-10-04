@@ -5,8 +5,6 @@ import java.util.UUID;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-import org.springframework.util.MimeType;
-
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.Value;

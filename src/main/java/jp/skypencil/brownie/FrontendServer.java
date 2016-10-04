@@ -16,7 +16,6 @@ import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
 
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.Vertx;
@@ -26,6 +25,7 @@ import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
+import jp.skypencil.brownie.MimeType;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;

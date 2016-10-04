@@ -19,7 +19,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.springframework.util.MimeType;
 
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -30,8 +29,8 @@ import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
-import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
+import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 
 @RunWith(VertxUnitRunner.class)
 public class FrontendServerTest {

@@ -3,20 +3,18 @@ package jp.skypencil.brownie;
 import java.io.File;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Component;
+
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
 import rx.Single;
-
-import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
 
 @Component
 @Slf4j

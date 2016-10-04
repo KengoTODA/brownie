@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.springframework.util.MimeType;
 
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;

@@ -9,7 +9,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
 
 import io.vertx.core.file.OpenOptions;
 import io.vertx.rxjava.core.Vertx;
