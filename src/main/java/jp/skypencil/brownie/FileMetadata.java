@@ -10,8 +10,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import lombok.Value;
 
-import org.springframework.util.MimeType;
-
 @ThreadSafe
 @Value
 public class FileMetadata implements Serializable {

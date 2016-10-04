@@ -28,4 +28,24 @@ public class UuidCodecTest {
         UUID decoded = codec.decodeFromWire(0, buffer);
         assertThat(decoded).isEqualTo(uuid);
     }
+
+    @Test
+    public void testTransform() {
+        UuidCodec codec = new UuidCodec();
+        UUID uuid = UUID.randomUUID();
+
+        assertThat(codec.transform(uuid)).isSameAs(uuid);
+    }
+
+    @Test
+    public void testName() {
+        UuidCodec codec = new UuidCodec();
+        assertThat(codec.name()).isEqualTo("UUID Codec");
+    }
+
+    @Test
+    public void testSystemCodecID() {
+        UuidCodec codec = new UuidCodec();
+        assertThat(codec.systemCodecID()).isEqualTo(-1);
+    }
 }

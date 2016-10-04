@@ -10,18 +10,19 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import io.netty.util.CharsetUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
 
 @ParametersAreNonnullByDefault
-public class TaskCodec implements MessageCodec<Task, Task> {
+public class VideoUploadedEventCodec implements MessageCodec<VideoUploadedEvent, VideoUploadedEvent> {
 
     @Override
-    public void encodeToWire(Buffer buffer, Task s) {
+    public void encodeToWire(Buffer buffer, VideoUploadedEvent s) {
         Set<String> resolutions = s.getResolutions();
-        byte[] key = s.getKey().toString().getBytes(CharsetUtil.UTF_8);
+        byte[] id = s.getId().toString().getBytes(CharsetUtil.UTF_8);
         byte[] fileName = s.getUploadedFileName().getBytes(CharsetUtil.UTF_8);
         buffer
-            .appendInt(key.length)
-            .appendBytes(key)
+            .appendInt(id.length)
+            .appendBytes(id)
             .appendInt(fileName.length)
             .appendBytes(fileName)
             .appendInt(resolutions.size());
@@ -34,11 +35,11 @@ public class TaskCodec implements MessageCodec<Task, Task> {
     }
 
     @Override
-    public Task decodeFromWire(int pos, Buffer buffer) {
-        int keyLength = buffer.getInt(pos);
+    public VideoUploadedEvent decodeFromWire(int pos, Buffer buffer) {
+        int idLength = buffer.getInt(pos);
         pos += 4;
-        UUID key = UUID.fromString(new String(buffer.getBytes(pos, pos + keyLength), CharsetUtil.UTF_8));
-        pos += keyLength;
+        UUID id = UUID.fromString(new String(buffer.getBytes(pos, pos + idLength), CharsetUtil.UTF_8));
+        pos += idLength;
         int fileNameLength = buffer.getInt(pos);
         pos += 4;
         String fileName = new String(buffer.getBytes(pos, pos + fileNameLength), CharsetUtil.UTF_8);
@@ -54,17 +55,17 @@ public class TaskCodec implements MessageCodec<Task, Task> {
         }
         long epochMilli = buffer.getLong(pos);
         pos += 8;
-        return new Task(key, fileName, resolutions, Instant.ofEpochMilli(epochMilli));
+        return new VideoUploadedEvent(id, fileName, resolutions, Instant.ofEpochMilli(epochMilli));
     }
 
     @Override
-    public Task transform(Task s) {
+    public VideoUploadedEvent transform(VideoUploadedEvent s) {
         return s;
     }
 
     @Override
     public String name() {
-        return "TaskCodec";
+        return "VideoUploadedEvent Codec";
     }
 
     @Override

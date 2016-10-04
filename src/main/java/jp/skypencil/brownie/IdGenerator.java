@@ -4,10 +4,7 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
-import org.springframework.stereotype.Component;
-
-@Component
-public class KeyGenerator {
+public class IdGenerator {
     /**
      * @return An UUIDv1 instance, which suits for ID on distributed system
      */

@@ -3,14 +3,9 @@ package jp.skypencil.brownie;
 import java.io.File;
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+import javax.inject.Inject;
 
-import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
-
-
-import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
@@ -19,32 +14,29 @@ import lombok.extern.slf4j.Slf4j;
 import rx.Single;
 import scala.Tuple2;
 
-@Component
 @Slf4j
-@RequiredArgsConstructor
-public class ThumbnailServer {
-    @Resource
-    private Vertx rxJavaVertx;
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
+public class ThumbnailServer extends AbstractVerticle {
+    private final FileTransporter fileTransporter;
 
-    @Resource
-    private ObservableFileTransporter fileTransporter;
+    private final ThumbnailGenerator thumbnailGenerator;
 
-    @Resource
-    private ThumbnailGenerator thumbnailGenerator;
+    private final ThumbnailMetadataRegistry thumbnailMetadataRegistry;
 
-    @Resource
-    private ThumbnailMetadataRegistry thumbnailMetadataRegistry;
+    @Override
+    public void start() throws Exception {
+        registerEventListeners();
+    }
 
-    @PostConstruct
-    public void registerEventListeners() {
+    private void registerEventListeners() {
         log.info("Thumbnail server has been started");
 
         // TODO vertx's event bus may lose message. http://vertx.io/docs/vertx-core/java/#_the_theory
         // To achieve the choreography, we need to persist event.
-        MessageConsumer<UUID> consumer = rxJavaVertx.eventBus().consumer("generate-thumbnail");
+        MessageConsumer<UUID> consumer = vertx.eventBus().consumer("generate-thumbnail");
         consumer.toObservable().map(Message::body).subscribe(videoId -> {
             log.info("Received request to generate thumbnail for videoId {}", videoId);
-            fileTransporter.download(videoId).toSingle()
+            fileTransporter.download(videoId)
                 .flatMap(video -> {
                     return thumbnailGenerator.generate(video, 1_000);
                 })
@@ -52,9 +44,7 @@ public class ThumbnailServer {
                     return generateMetadata(Tuple2.apply(thumbnail, videoId));
                 })
                 .flatMap(this::upload)
-                .map(metadata -> {
-                    return register(videoId, metadata);
-                })
+                .map(thumbnailMetadataRegistry::store)
                 .subscribe();
         });
     }
@@ -75,11 +65,6 @@ public class ThumbnailServer {
                 metadata.getId(),
                 "Thumbnail.jpg",
                 tuple._1(), metadata.getMimeType())
-               .map(v -> metadata)
-               .toSingle();
-    }
-
-    Single<Void> register(@FileId UUID videoId, ThumbnailMetadata metadata) {
-        return thumbnailMetadataRegistry.store(videoId, metadata);
+               .map(v -> metadata);
     }
 }

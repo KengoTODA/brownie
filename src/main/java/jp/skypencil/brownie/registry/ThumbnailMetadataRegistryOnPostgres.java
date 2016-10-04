@@ -2,24 +2,26 @@ package jp.skypencil.brownie.registry;
 
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import jp.skypencil.brownie.ThumbnailMetadata;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
 
-@AllArgsConstructor
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class ThumbnailMetadataRegistryOnPostgres
         implements ThumbnailMetadataRegistry {
     private static final String SQL_TO_INSERT = "INSERT INTO thumbnail_metadata (id, video_id, mime_type, content_length, width, height, milliseconds) VALUES (?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_TO_SELECT = "SELECT id, video_id, mime_type, content_length, width, height, milliseconds FROM thumbnail_metadata WHERE video_id = ?";
 
-    private AsyncSQLClient asyncSQLClient;
+    private final AsyncSQLClient asyncSQLClient;
 
     @Override
-    public Single<Void> store(UUID videoId, ThumbnailMetadata metadata) {
+    public Single<ThumbnailMetadata> store(ThumbnailMetadata metadata) {
         return asyncSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.updateWithParamsObservable(SQL_TO_INSERT, metadata.toJsonArray())
@@ -27,7 +29,10 @@ public class ThumbnailMetadataRegistryOnPostgres
                 })
                 .toSingle()
                 .map(ur -> {
-                    return null;
+                    if (ur.getUpdated() != 1) {
+                        throw new IllegalArgumentException("Failed to store given thumbnail metadata: " + metadata);
+                    }
+                    return metadata;
                 });
     }
 

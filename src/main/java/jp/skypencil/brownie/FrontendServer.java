@@ -9,28 +9,23 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
+import javax.inject.Inject;
 
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
-import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.MimeType;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
@@ -47,41 +42,25 @@ import rx.Observable;
  *
  * <p>This class is responsible to map URL to related operations.</p>
  */
-@Component
 @Slf4j
-@RequiredArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // for unit test
-public class FrontendServer {
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // for unit test
+public class FrontendServer extends AbstractVerticle {
     /**
      * Directory to store uploaded file.
      */
     private final String directory = createDirectory();
 
-    @Resource
-    private Vertx rxJavaVertx;
+    private final FileTransporter fileTransporter;
 
-    @Resource
-    private ObservableFileTransporter fileTransporter;
+    private final VideoUploadedEventRegistry observableTaskRegistry;
 
-    @Resource
-    private ObservableTaskRegistry observableTaskRegistry;
+    private final FileMetadataRegistry observableFileMetadataRegistry;
 
-    @Resource
-    private ObservableFileMetadataRegistry observableFileMetadataRegistry;
+    private final ThumbnailMetadataRegistry thumbnailMetadataRegistry;
 
-    @Resource
-    private ThumbnailMetadataRegistry thumbnailMetadataRegistry;
-
-    @Resource
-    private KeyGenerator keyGenerator;
-
-    /**
-     * TCP port number to connect. It is {@code 8080} by default, and configurable
-     * via {@code BROWNIE_CLUSTER_HTTP_PORT} system property.
-     */
-    @Value("${BROWNIE_CLUSTER_HTTP_PORT:8080}")
-    @Nonnegative
-    private int httpPort;
+    private final IdGenerator idGenerator;
 
     @Nonnull
     private String createDirectory() {
@@ -94,12 +73,16 @@ public class FrontendServer {
         }
     }
 
+    @Override
+    public void start() throws Exception {
+        createServer();
+    }
+
     /**
-     * Create {@link HttpServer} to listen specified {@link #httpPort}.
+     * Create {@link HttpServer} to listen specified {@link #config()}.
      */
-    @PostConstruct
-    public void createServer(){
-        Router router = Router.router(rxJavaVertx);
+    private void createServer(){
+        Router router = Router.router(vertx);
 
         // Serve the form handling part
         router.route("/form").handler(BodyHandler.create().setUploadsDirectory(directory));
@@ -110,7 +93,8 @@ public class FrontendServer {
         // Serve the static pages
         router.route().handler(StaticHandler.create());
 
-        rxJavaVertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
+        Integer httpPort = config().getInteger("BROWNIE_CLUSTER_HTTP_PORT", 8080);
+        vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
         log.info("HTTP server is listening {} port", httpPort);
     }
 
@@ -123,14 +107,14 @@ public class FrontendServer {
             return;
         }
         Observable.from(uploadedFiles).flatMap(fileUpload -> {
-            Task task = new Task(keyGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
+            VideoUploadedEvent task = new VideoUploadedEvent(idGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
             File file = new File(fileUpload.uploadedFileName());
             MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
             return Observable.merge(
-                    fileTransporter.upload(task.getKey(), fileUpload.fileName(), file, mimeType),
-                    observableTaskRegistry.store(task)
+                    fileTransporter.upload(task.getId(), fileUpload.fileName(), file, mimeType).toObservable(),
+                    observableTaskRegistry.store(task).toObservable()
             ).doOnCompleted(() -> {
-                rxJavaVertx.eventBus().send("file-uploaded", task);
+                vertx.eventBus().send("file-uploaded", task);
             });
         }).subscribe(v -> {}, error -> {
             log.warn("Failed to store task to registry", error);
@@ -143,7 +127,7 @@ public class FrontendServer {
     }
 
     private Router createRouterForTaskApi() {
-        Router subRouter = Router.router(rxJavaVertx);
+        Router subRouter = Router.router(vertx);
         subRouter.route().handler(ctx -> {
             HttpServerResponse response = ctx.response()
                     .setChunked(true)
@@ -167,7 +151,7 @@ public class FrontendServer {
     }
 
     private Router createRouterForFileApi() {
-        Router subRouter = Router.router(rxJavaVertx);
+        Router subRouter = Router.router(vertx);
         subRouter.get("/").handler(this::generateFileList);
         subRouter.get("/:fileId").handler(ctx -> {
             String fileId = ctx.request().getParam("fileId");
@@ -181,7 +165,7 @@ public class FrontendServer {
     }
 
     private Router createRouterForThumbnailApi() {
-        Router subRouter = Router.router(rxJavaVertx);
+        Router subRouter = Router.router(vertx);
         subRouter.get("/:videoId").handler(this::downloadThumbnail);
         return subRouter;
     }
@@ -192,7 +176,7 @@ public class FrontendServer {
         thumbnailMetadataRegistry.search(videoId).first().toSingle()
             .flatMap(thumbnail -> {
                 UUID thumbnailId = thumbnail.getId();
-                return fileTransporter.download(thumbnailId).toSingle();
+                return fileTransporter.download(thumbnailId);
             })
             .flatMap(thumbnailFile -> {
                 return response.sendFileObservable(thumbnailFile.getAbsolutePath()).toSingle();
@@ -207,23 +191,22 @@ public class FrontendServer {
 
     private void deleteFile(RoutingContext ctx, String fileId) {
         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
-        UUID key = UUID.fromString(fileId);
-        fileTransporter.delete(key).subscribe(next -> {},
+        UUID id = UUID.fromString(fileId);
+        fileTransporter.delete(id).subscribe(deleted -> {
+                    response.end("deleted");
+                },
                 error -> {
                     response.setStatusCode(500).end("Failed to load file");
-                },
-                () -> {
-                    response.end("deleted");
                 });
     }
 
     private void downloadFile(RoutingContext ctx, String fileId) {
-        UUID key = UUID.fromString(fileId);
+        UUID id = UUID.fromString(fileId);
         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
-        observableFileMetadataRegistry.load(key).subscribe(metadata -> {
+        observableFileMetadataRegistry.load(id).subscribe(metadata -> {
             long contentLength = metadata.getContentLength();
             response.putHeader("Content-Length", Long.toString(contentLength));
-            fileTransporter.download(key).subscribe(downloaded -> {
+            fileTransporter.download(id).subscribe(downloaded -> {
                 response.sendFile(downloaded.getAbsolutePath());
             }, error -> {
                 log.error("Failed to download file", error);

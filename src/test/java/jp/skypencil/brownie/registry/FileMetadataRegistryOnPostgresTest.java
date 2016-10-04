@@ -7,7 +7,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.util.MimeType;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -17,19 +16,20 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import jp.skypencil.brownie.FileMetadata;
+import jp.skypencil.brownie.MimeType;
 
 @RunWith(VertxUnitRunner.class)
-public class ObservableFileMetadataRegistryOnPostgresTest {
+public class FileMetadataRegistryOnPostgresTest {
 
     private Vertx vertx;
     private AsyncSQLClient client;
-    private ObservableFileMetadataRegistryOnPostgres registry;
+    private FileMetadataRegistryOnPostgres registry;
 
     @Before
     public final void setUp() {
         vertx = Vertx.vertx();
         client = PostgreSQLClient.createShared(vertx, createConfig());
-        registry = new ObservableFileMetadataRegistryOnPostgres(client);
+        registry = new FileMetadataRegistryOnPostgres(client);
     }
 
     @After
@@ -49,7 +49,7 @@ public class ObservableFileMetadataRegistryOnPostgresTest {
         }).subscribe(loaded -> {
             context.assertEquals(metadata, loaded);
             async.complete();
-        }, context::fail, async::complete);
+        }, context::fail);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class ObservableFileMetadataRegistryOnPostgresTest {
             context.assertNotEquals(metadata, loaded);
             context.assertEquals(loaded.getName(), "updated");
             async.complete();
-        }, context::fail, async::complete);
+        }, context::fail);
     }
 
     @Test
@@ -122,7 +122,7 @@ public class ObservableFileMetadataRegistryOnPostgresTest {
         }, error -> {
             context.assertTrue(error instanceof IllegalArgumentException);
             async.complete();
-        }, context::fail);
+        });
     }
 
     @Test
@@ -134,7 +134,7 @@ public class ObservableFileMetadataRegistryOnPostgresTest {
         }, error -> {
             context.assertTrue(error instanceof IllegalArgumentException);
             async.complete();
-        }, context::fail);
+        });
     }
 
     @Test
@@ -142,7 +142,7 @@ public class ObservableFileMetadataRegistryOnPostgresTest {
         UUID fileId = UUID.randomUUID();
         Async async = context.async(2);
         FileMetadata metadata = new FileMetadata(fileId, "name", MimeType.valueOf("text/plain"), 6, Instant.now());
-        registry.store(metadata).flatMap(v -> {
+        registry.store(metadata).toObservable().flatMap(v -> {
             return registry.iterate();
         }).filter(iterated -> {
             return iterated.equals(metadata);

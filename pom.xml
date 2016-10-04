@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>1.3.6.RELEASE</version>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
     <relativePath/>
   </parent>
 
@@ -17,10 +17,6 @@
   <name>Brownie - distributed video converter</name>
 
   <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter</artifactId>
-    </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
@@ -62,6 +58,21 @@
       <version>${findbugs.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+      <version>4.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>1.16.10</version>
@@ -71,6 +82,7 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+      <version>4.12</version>
     </dependency>
     <dependency>
       <groupId>com.google.truth</groupId>
@@ -106,8 +118,9 @@
   </reporting>
   <properties>
     <java.version>1.8</java.version>
-    <vertx.version>3.3.2</vertx.version>
+    <vertx.version>3.3.3</vertx.version>
     <findbugs.version>3.0.1</findbugs.version>
+    <slf4j.version>1.7.21</slf4j.version>
   </properties>
   <scm>
     <connection>scm:git:git@github.com:KengoTODA/brownie.git</connection>
@@ -142,16 +155,13 @@
     </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
         <artifactId>maven-project-info-reports-plugin</artifactId>
         <version>2.8.1</version>
       </plugin>
       <plugin>
         <artifactId>exec-maven-plugin</artifactId>
         <groupId>org.codehaus.mojo</groupId>
+        <version>1.5.0</version>
         <executions>
           <execution>
             <id>exec-npm-build</id>
@@ -181,11 +191,42 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <excludes>
+            <!-- Necessary to avoid ArrayIndexOutOfBoundsException at jacoco:report -->
+            <exclude>jp/skypencil/brownie/registry/FileMetadataRegistryOnPostgres.class</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.eluder.coveralls</groupId>
         <artifactId>coveralls-maven-plugin</artifactId>
         <version>4.2.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>io.vertx.core.Launcher</Main-Class>
+                    <Main-Verticle>jp.skypencil.brownie.MainVerticle</Main-Verticle>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+              <artifactSet/>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

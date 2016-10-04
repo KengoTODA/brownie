@@ -6,7 +6,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.util.MimeType;
 
 import com.google.common.base.Objects;
 
@@ -17,6 +16,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
+import jp.skypencil.brownie.MimeType;
 import jp.skypencil.brownie.ThumbnailMetadata;
 
 @RunWith(VertxUnitRunner.class)
@@ -45,7 +45,7 @@ public class ThumbnailMetadataRegistryOnPostgresTest {
         ThumbnailMetadata metadata = new ThumbnailMetadata(id, videoId, MimeType.valueOf("image/jpg"), 100, 320, 240, 0);
 
         Async async = context.async();
-        registry.store(videoId, metadata).subscribe(v -> async.complete(), context::fail);
+        registry.store(metadata).subscribe(v -> async.complete(), context::fail);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class ThumbnailMetadataRegistryOnPostgresTest {
         ThumbnailMetadata metadata = new ThumbnailMetadata(id, videoId, MimeType.valueOf("image/jpg"), 100, 320, 240, 0);
 
         Async async = context.async();
-        registry.store(videoId, metadata).toObservable().flatMap(v -> {
+        registry.store(metadata).toObservable().flatMap(v -> {
             return registry.search(videoId);
         }).filter(searched -> {
             return Objects.equal(metadata, searched);

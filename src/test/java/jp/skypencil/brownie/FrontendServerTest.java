@@ -19,7 +19,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.springframework.util.MimeType;
 
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -28,9 +27,10 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.RoutingContext;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
-import jp.skypencil.brownie.registry.ObservableTaskRegistry;
+import jp.skypencil.brownie.event.VideoUploadedEvent;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
+import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 
 @RunWith(VertxUnitRunner.class)
 public class FrontendServerTest {
@@ -42,7 +42,7 @@ public class FrontendServerTest {
     @Before
     public void setUp() {
         io.vertx.core.Vertx normalVertx = io.vertx.core.Vertx.vertx();
-        normalVertx.eventBus().registerDefaultCodec(Task.class, new TaskCodec());
+        normalVertx.eventBus().registerDefaultCodec(VideoUploadedEvent.class, new VideoUploadedEventCodec());
 
         vertx = Vertx.newInstance(normalVertx);
     }
@@ -54,7 +54,7 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithNoUploadedFile(TestContext context) {
-        FrontendServer server = new FrontendServer();
+        FrontendServer server = new FrontendServer(null, null, null, null, null);
 
         HttpServerResponse response = mock(HttpServerResponse.class);
         RoutingContext ctx = mock(RoutingContext.class);
@@ -68,19 +68,20 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithOneUploadedFile(TestContext context) throws IOException {
-        ObservableFileTransporter fileTransporter = mock(ObservableFileTransporter.class);
-        ObservableTaskRegistry taskRegistry = mock(ObservableTaskRegistry.class);
+        FileTransporter fileTransporter = mock(FileTransporter.class);
+        VideoUploadedEventRegistry taskRegistry = mock(VideoUploadedEventRegistry.class);
         Future<Void> uploadedFuture = Future.future();
-        doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
+        doReturn(uploadedFuture.setHandlerObservable().toSingle()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
-        doReturn(storedFuture.setHandlerObservable()).when(taskRegistry).store(any(Task.class));
-        FrontendServer server = new FrontendServer(vertx,
+        doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
+        FrontendServer server = new FrontendServer(
                 fileTransporter,
                 taskRegistry,
-                mock(ObservableFileMetadataRegistry.class),
+                mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new KeyGenerator(), 8080);
+                new IdGenerator());
+        server.init((io.vertx.core.Vertx) vertx.getDelegate(), null);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
@@ -102,19 +103,20 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithTaskRegistryError(TestContext context) throws IOException {
-        ObservableFileTransporter fileTransporter = mock(ObservableFileTransporter.class);
-        ObservableTaskRegistry taskRegistry = mock(ObservableTaskRegistry.class);
+        FileTransporter fileTransporter = mock(FileTransporter.class);
+        VideoUploadedEventRegistry taskRegistry = mock(VideoUploadedEventRegistry.class);
         Future<Void> uploadedFuture = Future.future();
-        doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
+        doReturn(uploadedFuture.setHandlerObservable().toSingle()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
-        doReturn(storedFuture.setHandlerObservable()).when(taskRegistry).store(any(Task.class));
-        FrontendServer server = new FrontendServer(vertx,
+        doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
+        FrontendServer server = new FrontendServer(
                 fileTransporter,
                 taskRegistry,
-                mock(ObservableFileMetadataRegistry.class),
+                mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new KeyGenerator(), 8080);
+                new IdGenerator());
+        server.init((io.vertx.core.Vertx) vertx.getDelegate(), null);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
@@ -137,19 +139,20 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithFileTransporterError(TestContext context) throws IOException {
-        ObservableFileTransporter fileTransporter = mock(ObservableFileTransporter.class);
-        ObservableTaskRegistry taskRegistry = mock(ObservableTaskRegistry.class);
+        FileTransporter fileTransporter = mock(FileTransporter.class);
+        VideoUploadedEventRegistry taskRegistry = mock(VideoUploadedEventRegistry.class);
         Future<Void> uploadedFuture = Future.future();
-        doReturn(uploadedFuture.setHandlerObservable()).when(fileTransporter)
+        doReturn(uploadedFuture.setHandlerObservable().toSingle()).when(fileTransporter)
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
-        doReturn(storedFuture.setHandlerObservable()).when(taskRegistry).store(any(Task.class));
-        FrontendServer server = new FrontendServer(vertx,
+        doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
+        FrontendServer server = new FrontendServer(
                 fileTransporter,
                 taskRegistry,
-                mock(ObservableFileMetadataRegistry.class),
+                mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new KeyGenerator(), 8080);
+                new IdGenerator());
+        server.init((io.vertx.core.Vertx) vertx.getDelegate(), null);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();

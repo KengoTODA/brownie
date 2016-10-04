@@ -19,9 +19,9 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 
 @RunWith(VertxUnitRunner.class)
-public class ObservableMountedFileSystemTest {
+public class MountedFileSystemTest {
     private Vertx vertx;
-    private ObservableMountedFileSystem fileSystem;
+    private MountedFileSystem fileSystem;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -29,7 +29,7 @@ public class ObservableMountedFileSystemTest {
     @Before
     public final void setUp() throws IOException {
         vertx = Vertx.vertx();
-        fileSystem = new ObservableMountedFileSystem(folder.newFolder().getAbsolutePath(), vertx);
+        fileSystem = new MountedFileSystem(folder.newFolder().getAbsolutePath(), vertx);
     }
 
     @After
@@ -40,20 +40,19 @@ public class ObservableMountedFileSystemTest {
     @Test
     public void testStore(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(key, buffer).subscribe(onNext -> {
-            context.assertNull(onNext);
-        }, context::fail, () -> {
+        fileSystem.store(id, buffer).subscribe(onNext -> {
+            context.assertEquals(id, onNext);
             async.complete();
-        });
+        }, context::fail);
     }
 
     @Test
     public void testLoadFileWhichDoesNotExist(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
-        fileSystem.load(key).subscribe(onNext -> {
+        UUID id = UUID.randomUUID();
+        fileSystem.load(id).subscribe(onNext -> {
             context.fail();
         }, error -> {
             context.assertTrue(error instanceof FileSystemException);
@@ -67,10 +66,10 @@ public class ObservableMountedFileSystemTest {
     @Test
     public void testLoad(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(key, buffer).flatMap(v -> {
-            return fileSystem.load(key);
+        fileSystem.store(id, buffer).toObservable().flatMap(v -> {
+            return fileSystem.load(id);
         }).subscribe(onNext -> {
             context.assertEquals("buffer", onNext.toString());
         }, context::fail, () -> {
@@ -81,12 +80,12 @@ public class ObservableMountedFileSystemTest {
     @Test
     public void testDelete(TestContext context) {
         Async async = context.async();
-        UUID key = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
-        fileSystem.store(key, buffer).flatMap(v -> {
-            return fileSystem.delete(key);
-        }).flatMap(v -> {
-            return fileSystem.load(key);
+        fileSystem.store(id, buffer).flatMap(v -> {
+            return fileSystem.delete(id);
+        }).toObservable().flatMap(v -> {
+            return fileSystem.load(id);
         }).subscribe(onNext -> {
             context.fail();
         }, error -> {

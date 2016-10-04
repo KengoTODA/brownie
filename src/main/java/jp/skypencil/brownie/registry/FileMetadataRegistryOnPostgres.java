@@ -5,27 +5,26 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.annotation.Resource;
 import javax.annotation.WillNotClose;
-
-import org.springframework.util.MimeType;
+import javax.inject.Inject;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.sql.SQLConnection;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
+import jp.skypencil.brownie.MimeType;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
+import rx.Single;
 
-@RequiredArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for Unit test
-public class ObservableFileMetadataRegistryOnPostgres
-        implements ObservableFileMetadataRegistry {
-    @Resource
-    private AsyncSQLClient postgreSQLClient;
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // only for Unit test
+public class FileMetadataRegistryOnPostgres
+        implements FileMetadataRegistry {
+    private final AsyncSQLClient postgreSQLClient;
 
     @Override
     public Observable<FileMetadata> iterate() {
@@ -46,15 +45,17 @@ public class ObservableFileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Observable<Void> store(FileMetadata metadata) {
+    public Single<FileMetadata> store(FileMetadata metadata) {
         return postgreSQLClient.getConnectionObservable()
+                .toSingle()
                 .flatMap(con -> {
                     return storeInternal(con, metadata)
                             .doAfterTerminate(con::close);
-                });
+                })
+                .map(v -> metadata);
     }
 
-    private Observable<Void> storeInternal(@WillNotClose SQLConnection con, FileMetadata metadata) {
+    private Single<Void> storeInternal(@WillNotClose SQLConnection con, FileMetadata metadata) {
         return con.setAutoCommitObservable(false)
                 .flatMap(v -> {
                     return con.queryWithParamsObservable(
@@ -76,11 +77,11 @@ public class ObservableFileMetadataRegistryOnPostgres
                     }
                 }).flatMap(ur-> {
                     return con.commitObservable();
-                });
+                }).toSingle();
     }
 
     @Override
-    public Observable<Void> update(FileMetadata metadata) {
+    public Single<FileMetadata> update(FileMetadata metadata) {
         return postgreSQLClient.getConnectionObservable()
             .flatMap(con -> {
                 JsonArray params = new JsonArray()
@@ -91,19 +92,19 @@ public class ObservableFileMetadataRegistryOnPostgres
                         .add(metadata.getFileId().toString());
                 return con.updateWithParamsObservable("UPDATE file_metadata SET name = ?, mime_type = ?, content_length = ?, generated = ? WHERE id = ?", params)
                         .doAfterTerminate(con::close);
-            }).map(ur -> {
-                return null;
+            }).toSingle().map(ur -> {
+                return metadata;
             });
     }
 
     @Override
-    public Observable<FileMetadata> load(UUID fileId) {
+    public Single<FileMetadata> load(UUID fileId) {
         return postgreSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.queryWithParamsObservable("SELECT name, mime_type, content_length, generated FROM file_metadata WHERE id = ?",
                             new JsonArray().add(fileId.toString()))
                             .doAfterTerminate(con::close);
-                }).map(rs -> {
+                }).toSingle().map(rs -> {
                     List<JsonArray> result = rs.getResults();
                     if (result.isEmpty()) {
                         throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
@@ -120,16 +121,16 @@ public class ObservableFileMetadataRegistryOnPostgres
     }
 
     @Override
-    public Observable<Void> delete(UUID fileId) {
+    public Single<UUID> delete(UUID fileId) {
         return postgreSQLClient.getConnectionObservable()
                 .flatMap(con -> {
                     return con.updateWithParamsObservable("DELETE FROM file_metadata WHERE id = ?", new JsonArray().add(fileId.toString()))
                     .doAfterTerminate(con::close);
-                }).map(rs -> {
+                }).toSingle().map(rs -> {
                     if (rs.getUpdated() == 0) {
                         throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
                     }
-                    return null;
+                    return fileId;
                 });
     }
 }

@@ -6,52 +6,47 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.Resource;
-
-import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
+import javax.inject.Inject;
 
 import io.vertx.core.file.OpenOptions;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.file.AsyncFile;
-import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
-import jp.skypencil.brownie.registry.ObservableFileMetadataRegistry;
+import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import rx.Observable;
+import rx.Single;
 
-@Component
 @ParametersAreNonnullByDefault
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for unit test
-public class ObservableFileTransporter {
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // only for unit test
+public class FileTransporter {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
-    @Resource
-    private Vertx rxJavaVertx;
+    private final Vertx rxJavaVertx;
 
-    @Resource
-    private ObservableSharedFileSystem observableFileSystem;
+    private final SharedFileSystem observableFileSystem;
 
-    @Resource
-    private ObservableFileMetadataRegistry observableFileMetadataRegistry;
+    private final FileMetadataRegistry observableFileMetadataRegistry;
 
     /**
      * Download a file from shared file system, and store it to local file system.
      */
-    Observable<File> download(UUID key) {
-        return store(observableFileSystem.load(key));
+    Single<File> download(UUID id) {
+        return store(observableFileSystem.load(id));
     }
 
     /**
      * Store data to local file system, and return {@link File} instance
      */
-    private Observable<File> store(Observable<Buffer> data) {
+    private Single<File> store(Observable<Buffer> data) {
         String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
         return rxJavaVertx.fileSystem()
             .openObservable(downloadedFile, new OpenOptions().setWrite(true))
+            .toSingle()
             .flatMap(opened -> {
                 CompletableFuture<File> future = new CompletableFuture<>();
                 data.subscribe(buffer -> {
@@ -63,28 +58,29 @@ public class ObservableFileTransporter {
                         opened.close();
                         future.complete(new File(downloadedFile));
                     });
-                return Observable.from(future);
+                return Single.from(future);
             });
     }
 
-    Observable<Void> upload(UUID key, String name, File file, MimeType mimeType) {
+    Single<FileMetadata> upload(UUID id, String name, File file, MimeType mimeType) {
         return rxJavaVertx.fileSystem().openObservable(file.getAbsolutePath(),
                 new OpenOptions().setRead(true))
         .flatMap(AsyncFile::toObservable)
         .reduce(Buffer.buffer(), (reduced, buffer) -> {
             return reduced.appendBuffer(buffer);
         })
+        .toSingle()
         .flatMap(reducedBuffer -> {
-            return observableFileSystem.store(key, reducedBuffer);
+            return observableFileSystem.store(id, reducedBuffer);
         }).flatMap(v -> {
-            FileMetadata metadata = new FileMetadata(key, name, mimeType, file.length(), Instant.now());
+            FileMetadata metadata = new FileMetadata(id, name, mimeType, file.length(), Instant.now());
             return observableFileMetadataRegistry.store(metadata);
         });
     }
 
-    Observable<Void> delete(UUID key) {
-        return observableFileMetadataRegistry.delete(key).flatMap(v -> {
-            return observableFileSystem.delete(key);
+    Single<@FileId UUID> delete(@FileId UUID id) {
+        return observableFileMetadataRegistry.delete(id).flatMap(v -> {
+            return observableFileSystem.delete(id);
         });
     }
 }

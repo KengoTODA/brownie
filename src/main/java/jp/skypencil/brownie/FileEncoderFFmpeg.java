@@ -5,38 +5,32 @@ import java.io.IOException;
 import java.util.Objects;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.Resource;
-
-import org.springframework.stereotype.Component;
+import javax.inject.Inject;
 
 import io.vertx.core.Handler;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
-import jp.skypencil.brownie.fs.ObservableSharedFileSystem;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import rx.Observable;
+import rx.Single;
 
 /**
- * An {@link ObservableFileEncoder} implementation which depends on FFmpeg.
+ * An {@link FileEncoder} implementation which depends on FFmpeg.
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
-@Component
 @Slf4j
 @ParametersAreNonnullByDefault
-public class ObservableFileEncoderFFmpeg implements ObservableFileEncoder {
-    @Resource
-    private Vertx rxJavaVertx;
-
-    @Resource
-    private ObservableSharedFileSystem fileSystem;
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
+public class FileEncoderFFmpeg implements FileEncoder {
+    private final Vertx rxJavaVertx;
 
     @Override
-    public Observable<File> convert(File targetFile, String resolution) {
+    public Single<File> convert(File targetFile, String resolution) {
         Objects.requireNonNull(targetFile);
         Objects.requireNonNull(resolution);
         final int processors = Runtime.getRuntime().availableProcessors();
         return rxJavaVertx.executeBlockingObservable(
-                convert(targetFile, resolution, processors));
+                convert(targetFile, resolution, processors)).toSingle();
     }
 
     private Handler<Future<File>> convert(File targetFile,
