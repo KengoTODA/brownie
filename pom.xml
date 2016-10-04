@@ -191,6 +191,12 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <excludes>
+            <!-- Necessary to avoid ArrayIndexOutOfBoundsException at jacoco:report -->
+            <exclude>jp/skypencil/brownie/registry/FileMetadataRegistryOnPostgres.class</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.eluder.coveralls</groupId>
