@@ -65,7 +65,7 @@ public class VideoUploadedEventCodec implements MessageCodec<VideoUploadedEvent,
 
     @Override
     public String name() {
-        return "VideoUploadedEventCodec";
+        return "VideoUploadedEvent Codec";
     }
 
     @Override

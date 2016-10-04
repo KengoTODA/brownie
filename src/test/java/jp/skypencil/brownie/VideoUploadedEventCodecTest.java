@@ -24,4 +24,24 @@ public class VideoUploadedEventCodecTest {
         assertThat(decodedTask).isEqualTo(task);
     }
 
+    @Test
+    public void testTransform() {
+        VideoUploadedEventCodec codec = new VideoUploadedEventCodec();
+        UUID taskId = new IdGenerator().generateUuidV1();
+        VideoUploadedEvent event = new VideoUploadedEvent(taskId, "file", Collections.singleton("resolution"));
+
+        assertThat(codec.transform(event)).isSameAs(event);
+    }
+
+    @Test
+    public void testName() {
+        VideoUploadedEventCodec codec = new VideoUploadedEventCodec();
+        assertThat(codec.name()).isEqualTo("VideoUploadedEvent Codec");
+    }
+
+    @Test
+    public void testSystemCodecID() {
+        VideoUploadedEventCodec codec = new VideoUploadedEventCodec();
+        assertThat(codec.systemCodecID()).isEqualTo(-1);
+    }
 }
