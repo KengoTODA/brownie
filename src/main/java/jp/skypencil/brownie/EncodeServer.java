@@ -32,7 +32,6 @@ public class EncodeServer extends AbstractVerticle {
         MessageConsumer<VideoUploadedEvent> consumer = vertx.eventBus().localConsumer("file-uploaded");
         consumer.toObservable().subscribe(message -> {
             VideoUploadedEvent task = message.body();
-            System.err.println("transporter is " + fileTransporter);
             fileTransporter.download(task.getId()).doOnSuccess(downloadedFile -> {
                 log.debug("Downloaded file (id: {}) to {}",
                         task.getId(),
