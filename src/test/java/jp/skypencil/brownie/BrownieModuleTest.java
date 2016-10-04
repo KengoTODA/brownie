@@ -36,7 +36,7 @@ public class BrownieModuleTest {
     public void ensureItCanGenerateVerticles() {
         Injector injector = Guice.createInjector(module);
         injector.getInstance(FrontendServer.class);
-        injector.getInstance(BackendServer.class);
+        injector.getInstance(EncodeServer.class);
         injector.getInstance(ThumbnailServer.class);
     }
 

@@ -45,7 +45,7 @@ public class MainVerticle extends AbstractVerticle {
         Injector injector = createInjector();
         DeploymentOptions options = new DeploymentOptions().setConfig(config());
         getVertx().deployVerticle(injector.getInstance(FrontendServer.class), options);
-        getVertx().deployVerticle(injector.getInstance(BackendServer.class), options);
+        getVertx().deployVerticle(injector.getInstance(EncodeServer.class), options);
         getVertx().deployVerticle(injector.getInstance(ThumbnailServer.class), options);
     }
 

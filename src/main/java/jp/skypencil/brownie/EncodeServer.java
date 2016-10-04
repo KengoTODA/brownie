@@ -16,7 +16,7 @@ import rx.Single;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class BackendServer extends AbstractVerticle {
+public class EncodeServer extends AbstractVerticle {
     private final FileEncoder fileEncoder;
 
     private final FileTransporter fileTransporter;
