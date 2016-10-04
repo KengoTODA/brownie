@@ -6,9 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.Resource;
-
-import org.springframework.stereotype.Component;
+import javax.inject.Inject;
 
 import io.vertx.core.file.OpenOptions;
 import io.vertx.rxjava.core.Vertx;
@@ -17,26 +15,22 @@ import io.vertx.rxjava.core.file.AsyncFile;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
 
-@Component
 @ParametersAreNonnullByDefault
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for unit test
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // only for unit test
 public class FileTransporter {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
-    @Resource
-    private Vertx rxJavaVertx;
+    private final Vertx rxJavaVertx;
 
-    @Resource
-    private SharedFileSystem observableFileSystem;
+    private final SharedFileSystem observableFileSystem;
 
-    @Resource
-    private FileMetadataRegistry observableFileMetadataRegistry;
+    private final FileMetadataRegistry observableFileMetadataRegistry;
 
     /**
      * Download a file from shared file system, and store it to local file system.

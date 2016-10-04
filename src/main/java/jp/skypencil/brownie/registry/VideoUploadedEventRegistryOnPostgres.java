@@ -3,22 +3,21 @@ package jp.skypencil.brownie.registry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.annotation.Resource;
+import javax.inject.Inject;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
 
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for test
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // only for test
 public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventRegistry {
-    @Resource
-    private AsyncSQLClient postgreSQLClient;
+    private final AsyncSQLClient postgreSQLClient;
 
     @Override
     public Observable<VideoUploadedEvent> iterate() {

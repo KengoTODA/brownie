@@ -54,7 +54,7 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithNoUploadedFile(TestContext context) {
-        FrontendServer server = new FrontendServer();
+        FrontendServer server = new FrontendServer(null, null, null, null, null);
 
         HttpServerResponse response = mock(HttpServerResponse.class);
         RoutingContext ctx = mock(RoutingContext.class);
@@ -75,12 +75,13 @@ public class FrontendServerTest {
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
         doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
-        FrontendServer server = new FrontendServer(vertx,
+        FrontendServer server = new FrontendServer(
                 fileTransporter,
                 taskRegistry,
                 mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new IdGenerator(), 8080);
+                new IdGenerator());
+        server.init((io.vertx.core.Vertx) vertx.getDelegate(), null);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
@@ -109,12 +110,13 @@ public class FrontendServerTest {
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
         doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
-        FrontendServer server = new FrontendServer(vertx,
+        FrontendServer server = new FrontendServer(
                 fileTransporter,
                 taskRegistry,
                 mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new IdGenerator(), 8080);
+                new IdGenerator());
+        server.init((io.vertx.core.Vertx) vertx.getDelegate(), null);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();
@@ -144,12 +146,13 @@ public class FrontendServerTest {
                 .upload(any(UUID.class), anyString(), any(File.class), eq(MimeType.valueOf("text/plain")));
         Future<Void> storedFuture = Future.future();
         doReturn(storedFuture.setHandlerObservable().toSingle()).when(taskRegistry).store(any(VideoUploadedEvent.class));
-        FrontendServer server = new FrontendServer(vertx,
+        FrontendServer server = new FrontendServer(
                 fileTransporter,
                 taskRegistry,
                 mock(FileMetadataRegistry.class),
                 mock(ThumbnailMetadataRegistry.class),
-                new IdGenerator(), 8080);
+                new IdGenerator());
+        server.init((io.vertx.core.Vertx) vertx.getDelegate(), null);
         FileUpload fileUpload = mock(FileUpload.class);
         doReturn("text/plain").when(fileUpload).contentType();
         doReturn(folder.newFile().getAbsolutePath()).when(fileUpload).uploadedFileName();

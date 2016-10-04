@@ -5,14 +5,12 @@ import java.io.IOException;
 import java.util.Objects;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.Resource;
-
-import org.springframework.stereotype.Component;
+import javax.inject.Inject;
 
 import io.vertx.core.Handler;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
-import jp.skypencil.brownie.fs.SharedFileSystem;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Single;
 
@@ -20,15 +18,11 @@ import rx.Single;
  * An {@link FileEncoder} implementation which depends on FFmpeg.
  * It needs {@code ffmpeg} executable in the {@code PATH}.
  */
-@Component
 @Slf4j
 @ParametersAreNonnullByDefault
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class FileEncoderFFmpeg implements FileEncoder {
-    @Resource
-    private Vertx rxJavaVertx;
-
-    @Resource
-    private SharedFileSystem fileSystem;
+    private final Vertx rxJavaVertx;
 
     @Override
     public Single<File> convert(File targetFile, String resolution) {

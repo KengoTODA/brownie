@@ -3,39 +3,36 @@ package jp.skypencil.brownie;
 import java.io.File;
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+import javax.inject.Inject;
 
-import org.springframework.stereotype.Component;
-
-import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
 import rx.Single;
 
-@Component
 @Slf4j
-public class BackendServer {
-    @Resource
-    private Vertx rxJavaVertx;
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
+public class BackendServer extends AbstractVerticle {
+    private final FileEncoder fileEncoder;
 
-    @Resource
-    private FileEncoder fileEncoder;
+    private final FileTransporter fileTransporter;
 
-    @Resource
-    private FileTransporter fileTransporter;
+    private final IdGenerator idGenerator;
 
-    @Resource
-    private IdGenerator idGenerator;
+    @Override
+    public void start() throws Exception {
+        registerEventListeners();
+    }
 
-    @PostConstruct
-    void registerEventListeners() {
-        MessageConsumer<VideoUploadedEvent> consumer = rxJavaVertx.eventBus().localConsumer("file-uploaded");
+    private void registerEventListeners() {
+        MessageConsumer<VideoUploadedEvent> consumer = vertx.eventBus().localConsumer("file-uploaded");
         consumer.toObservable().subscribe(message -> {
             VideoUploadedEvent task = message.body();
+            System.err.println("transporter is " + fileTransporter);
             fileTransporter.download(task.getId()).doOnSuccess(downloadedFile -> {
                 log.debug("Downloaded file (id: {}) to {}",
                         task.getId(),
@@ -56,15 +53,15 @@ public class BackendServer {
     private Single<File> convert(File source, String resolution, Message<VideoUploadedEvent> message) {
         return fileEncoder.convert(source, resolution)
                 .doOnSuccess(converted -> {
-                    log.info("Converted file (path: {}, resolution: {}) to {}",
+                    log.info("Converted file (path: {}, resolution: {}) to {}", new Object[]{
                             source.getAbsolutePath(),
                             resolution,
-                            converted.getAbsoluteFile());
+                            converted.getAbsoluteFile()});
                 }).doOnError(error -> {
-                    log.error("Failed to convert file (path: {}, resolution: {})",
+                    log.error("Failed to convert file (path: {}, resolution: {})", new Object[]{
                             source.getAbsolutePath(),
                             resolution,
-                            error);
+                            error});
                     // TODO do we need to call message.fail() even when file is invalid?
                     // TODO how to handle only a part of resolutions have problem?
                     message.fail(2, "Failed to convert file");
@@ -81,7 +78,7 @@ public class BackendServer {
                     message.fail(3, "Failed to upload file");
                 }).doOnSuccess(v -> {
                     log.info("Uploaded file ({})", source.getAbsolutePath());
-                    rxJavaVertx.eventBus().send("generate-thumbnail", id);
+                    vertx.eventBus().send("generate-thumbnail", id);
                 });
     }
 }

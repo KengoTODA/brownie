@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.annotation.Resource;
 import javax.annotation.WillNotClose;
+import javax.inject.Inject;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
@@ -15,17 +15,16 @@ import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
 import jp.skypencil.brownie.MimeType;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
 
-@RequiredArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // only for Unit test
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // only for Unit test
 public class FileMetadataRegistryOnPostgres
         implements FileMetadataRegistry {
-    @Resource
-    private AsyncSQLClient postgreSQLClient;
+    private final AsyncSQLClient postgreSQLClient;
 
     @Override
     public Observable<FileMetadata> iterate() {

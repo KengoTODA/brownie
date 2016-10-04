@@ -6,29 +6,25 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.Resource;
-
-import org.springframework.stereotype.Component;
+import javax.inject.Inject;
 
 import io.vertx.core.Handler;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Single;
 
-@Component
 @Slf4j
 @ParametersAreNonnullByDefault
-@RequiredArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PACKAGE) // for unit test
+@RequiredArgsConstructor(
+        onConstructor = @__(@Inject),
+        access = AccessLevel.PACKAGE) // for unit test
 class ThumbnailGeneratorFFmpeg implements ThumbnailGenerator {
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
-    @Resource
-    private Vertx rxJavaVertx;
+    private final Vertx rxJavaVertx;
 
     @Override
     public Single<File> generate(File video, int milliseconds) {

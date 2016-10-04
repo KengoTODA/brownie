@@ -3,18 +3,25 @@ package jp.skypencil.brownie.fs;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.file.FileSystem;
-import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
 
-@RequiredArgsConstructor
 public class MountedFileSystem implements SharedFileSystem {
     private final String baseDir;
 
     private final Vertx rxJavaVertx;
+
+    @Inject
+    MountedFileSystem(@Named("mountedDir") String baseDir, Vertx vertx) {
+        this.baseDir = baseDir;
+        this.rxJavaVertx = vertx;
+    }
 
     @Override
     public Observable<Buffer> load(UUID id) {
