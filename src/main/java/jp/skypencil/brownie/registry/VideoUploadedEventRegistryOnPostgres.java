@@ -23,7 +23,7 @@ public class VideoUploadedEventRegistryOnPostgres implements VideoUploadedEventR
     public Observable<VideoUploadedEvent> iterate() {
         return postgreSQLClient.getConnectionObservable().flatMap(con -> {
             return con.queryObservable(
-                    "SELECT id, uploaded_file_name, resolutions, generated FROM video_uploaded_event ORDER BY generated")
+                    "SELECT id, uploaded_file_name, resolutions, generated FROM video_uploaded_event ORDER BY generated DESC")
                     .doAfterTerminate(con::close);
         }).flatMap(selected -> {
             Iterable<VideoUploadedEvent> iterable = selected.getResults().stream()

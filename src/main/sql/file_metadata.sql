@@ -6,3 +6,7 @@ CREATE TABLE file_metadata (
   generated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
+
+CREATE INDEX file_metadata_index ON file_metadata (generated);
+
+EXPLAIN SELECT id, name, mime_type, content_length, generated from file_metadata ORDER BY generated DESC;
