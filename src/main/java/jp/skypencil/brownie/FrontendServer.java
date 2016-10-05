@@ -29,6 +29,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
+import scala.Tuple2;
 
 
 
@@ -178,6 +179,7 @@ public class FrontendServer extends AbstractVerticle {
                 UUID thumbnailId = thumbnail.getId();
                 return fileTransporter.download(thumbnailId);
             })
+            .map(Tuple2::_2)
             .flatMap(thumbnailFile -> {
                 return response.sendFileObservable(thumbnailFile.getAbsolutePath()).toSingle();
             })
@@ -206,7 +208,7 @@ public class FrontendServer extends AbstractVerticle {
         observableFileMetadataRegistry.load(id).subscribe(metadata -> {
             long contentLength = metadata.getContentLength();
             response.putHeader("Content-Length", Long.toString(contentLength));
-            fileTransporter.download(id).subscribe(downloaded -> {
+            fileTransporter.download(id).map(Tuple2::_2).subscribe(downloaded -> {
                 response.sendFile(downloaded.getAbsolutePath());
             }, error -> {
                 log.error("Failed to download file", error);

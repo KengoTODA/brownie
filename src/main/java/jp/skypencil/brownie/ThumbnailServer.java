@@ -37,6 +37,7 @@ public class ThumbnailServer extends AbstractVerticle {
         consumer.toObservable().map(Message::body).subscribe(videoId -> {
             log.info("Received request to generate thumbnail for videoId {}", videoId);
             fileTransporter.download(videoId)
+                .map(Tuple2::_2)
                 .flatMap(video -> {
                     return thumbnailGenerator.generate(video, 1_000);
                 })

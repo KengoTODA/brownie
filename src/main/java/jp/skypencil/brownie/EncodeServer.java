@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
 import rx.Single;
+import scala.Tuple2;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
@@ -32,7 +33,7 @@ public class EncodeServer extends AbstractVerticle {
         MessageConsumer<VideoUploadedEvent> consumer = vertx.eventBus().localConsumer("file-uploaded");
         consumer.toObservable().subscribe(message -> {
             VideoUploadedEvent task = message.body();
-            fileTransporter.download(task.getId()).doOnSuccess(downloadedFile -> {
+            fileTransporter.download(task.getId()).map(Tuple2::_2).doOnSuccess(downloadedFile -> {
                 log.debug("Downloaded file (id: {}) to {}",
                         task.getId(),
                         downloadedFile);

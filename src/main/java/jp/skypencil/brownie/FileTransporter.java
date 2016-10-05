@@ -18,6 +18,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;
+import scala.Tuple2;
 
 @ParametersAreNonnullByDefault
 @RequiredArgsConstructor(
@@ -35,8 +36,9 @@ public class FileTransporter {
     /**
      * Download a file from shared file system, and store it to local file system.
      */
-    Single<File> download(UUID id) {
-        return store(observableFileSystem.load(id));
+    Single<Tuple2<FileMetadata, File>> download(UUID id) {
+        return observableFileMetadataRegistry.load(id)
+            .zipWith(store(observableFileSystem.load(id)), Tuple2::apply);
     }
 
     /**
