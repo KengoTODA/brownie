@@ -85,4 +85,8 @@ public class FileTransporter {
             return observableFileSystem.delete(id);
         });
     }
+
+    Observable<FileMetadata> list() {
+        return observableFileMetadataRegistry.iterate();
+    }
 }

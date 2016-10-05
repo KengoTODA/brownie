@@ -8,6 +8,7 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
+import io.vertx.core.json.JsonObject;
 import lombok.Value;
 
 @ThreadSafe
@@ -30,5 +31,14 @@ public class FileMetadata implements Serializable {
     public String toJson() {
         return String.format("{\"fileId\":\"%s\",\"fileName\":\"%s\",\"mimeType\":\"%s\",\"contentLength\":%d,\"generated\":%d}",
                 fileId, name, mimeType, contentLength, generated.toEpochMilli());
+    }
+
+    public JsonObject toJsonObject() {
+        return new JsonObject()
+                .put("id", fileId.toString())
+                .put("name", name)
+                .put("mime_type", mimeType.toString())
+                .put("content_length", contentLength)
+                .put("generated", generated);
     }
 }
