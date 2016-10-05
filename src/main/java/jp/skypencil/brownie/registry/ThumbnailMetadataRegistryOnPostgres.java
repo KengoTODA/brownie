@@ -16,7 +16,7 @@ import rx.Single;
 public class ThumbnailMetadataRegistryOnPostgres
         implements ThumbnailMetadataRegistry {
     private static final String SQL_TO_INSERT = "INSERT INTO thumbnail_metadata (id, video_id, mime_type, content_length, width, height, milliseconds) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    private static final String SQL_TO_SELECT = "SELECT id, video_id, mime_type, content_length, width, height, milliseconds FROM thumbnail_metadata WHERE video_id = ? ORDER BY generated";
+    private static final String SQL_TO_SELECT = "SELECT id, video_id, mime_type, content_length, width, height, milliseconds FROM thumbnail_metadata WHERE video_id = ? ORDER BY generated DESC";
 
     private final AsyncSQLClient asyncSQLClient;
 
