@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.sql.SQLConnection;
+import jp.skypencil.brownie.BrownieFileNotFoundException;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
 import jp.skypencil.brownie.MimeType;
@@ -107,7 +108,7 @@ public class FileMetadataRegistryOnPostgres
                 }).toSingle().map(rs -> {
                     List<JsonArray> result = rs.getResults();
                     if (result.isEmpty()) {
-                        throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
+                        throw new BrownieFileNotFoundException(fileId);
                     } else {
                         JsonArray jsonObject = result.get(0);
                         Instant generated = Instant.parse(jsonObject.getString(3) + "Z");
@@ -128,7 +129,7 @@ public class FileMetadataRegistryOnPostgres
                     .doAfterTerminate(con::close);
                 }).toSingle().map(rs -> {
                     if (rs.getUpdated() == 0) {
-                        throw new IllegalArgumentException("FileMetadata not found: fileId = " + fileId);
+                        throw new BrownieFileNotFoundException(fileId);
                     }
                     return fileId;
                 });

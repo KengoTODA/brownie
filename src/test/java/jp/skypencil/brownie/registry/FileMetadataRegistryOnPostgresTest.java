@@ -15,6 +15,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
+import jp.skypencil.brownie.BrownieFileNotFoundException;
 import jp.skypencil.brownie.FileMetadata;
 import jp.skypencil.brownie.MimeType;
 
@@ -87,7 +88,7 @@ public class FileMetadataRegistryOnPostgresTest {
         registry.load(fileId).subscribe(loaded -> {
             context.fail();
         }, error -> {
-            context.assertTrue(error instanceof IllegalArgumentException);
+            context.assertTrue(error instanceof BrownieFileNotFoundException);
             async.complete();
         });
     }
@@ -120,7 +121,7 @@ public class FileMetadataRegistryOnPostgresTest {
         }).subscribe(v -> {
             context.fail();
         }, error -> {
-            context.assertTrue(error instanceof IllegalArgumentException);
+            context.assertTrue(error instanceof BrownieFileNotFoundException);
             async.complete();
         });
     }
@@ -132,7 +133,7 @@ public class FileMetadataRegistryOnPostgresTest {
         registry.delete(fileId).subscribe(v -> {
             context.fail();
         }, error -> {
-            context.assertTrue(error instanceof IllegalArgumentException);
+            context.assertTrue(error instanceof BrownieFileNotFoundException);
             async.complete();
         });
     }

@@ -7,15 +7,19 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
+import io.vertx.rx.java.ObservableFuture;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
@@ -36,28 +40,53 @@ class FileStorageServer extends AbstractVerticle {
 
     private final IdGenerator idGenerator;
 
+    private HttpServer server;
+
+    @Getter(AccessLevel.PACKAGE)
+    private final ObservableFuture<HttpServer> listenedFuture = new ObservableFuture<>();
+
     @Override
     public void start() {
         log.info("Initializing FrontStorageServer...");
 
         Router router = createRouter();
         Integer httpPort = config().getInteger("BROWNIE_CLUSTER_HTTP_PORT", 8080);
-        vertx.createHttpServer().requestHandler(router::accept).listen(httpPort);
+        server = vertx.createHttpServer().requestHandler(router::accept).listen(httpPort, listenedFuture.toHandler());
         log.info("HTTP server is listening {} port", httpPort);
+    }
+
+    @Override
+    public void stop(Future<Void> future) {
+        server.close(ar -> {
+            if (ar.failed()) {
+                future.fail(ar.cause());
+            } else {
+                future.complete();
+            }
+        });
     }
 
     private Router createRouter() {
         Router router = Router.router(vertx);
         router.get("/file/").handler(this::listFile);
-        router.get("/file/:fileId").handler(this::getFile);
+        router.get("/file/:fileId").handler(this::getFile).failureHandler(this::judgeStatusCode);
         router.post("/file").handler(this::postFile);
-        router.delete("/file/:fileId").handler(this::deleteFile);
+        router.delete("/file/:fileId").handler(this::deleteFile).failureHandler(this::judgeStatusCode);
         return router;
+    }
+
+    private void judgeStatusCode(RoutingContext ctx) {
+        if (ctx.failure() instanceof BrownieFileNotFoundException) {
+            ctx.response().setStatusCode(404).end("File not found");
+        } else {
+            ctx.next();
+        }
     }
 
     private void listFile(RoutingContext ctx) {
         HttpServerResponse response = ctx.response()
                 .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+                .setChunked(true)
                 .write("[");
         log.debug("Requested to list files");
 
