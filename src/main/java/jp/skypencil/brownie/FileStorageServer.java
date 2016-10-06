@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  * <ul>
  * <li>{@code GET /file/}, which returns JsonArray which represents list of {@link FileMetadata}.</li>
  * <li>{@code GET /file/:fileId}, which returns file content as response body, and {@link FileMetadata} as HTTP headers. It responds 404 if specified file does not exist.</li>
- * <li>{@code HEAD /file/:fileId}, which returns file metadata as HTTP headers. It responds 404 if specified file does not exist.</li>
+ * <li>{@code HEAD /file/:fileId}, which returns file {@link FileMetadata} as HTTP headers. It responds 404 if specified file does not exist.</li>
  * <li>{@code POST /file/}, which stores uploaded file to storage and returns {@link FileMetadata} as HTTP headers.</li>
  * <li>{@code DELETE /file/:fileId}, which deletes stored file in storage. It responds 404 if specified file does not exist.</li>
  * </ul>
