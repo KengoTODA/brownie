@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doReturn;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.After;
@@ -87,9 +88,12 @@ public class FileTransporterTest {
         FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
         UUID id = UUID.randomUUID();
+        FileMetadata metadata = new FileMetadata(id, "name", MimeType.valueOf("text/plain"), 6, Instant.now());
         doReturn(Observable.just(Buffer.buffer("buffer"))).when(fileSystem).load(eq(id));
+        doReturn(Single.just(metadata)).when(fileMetadataRegistry).load(eq(id));
         transporter.download(id).subscribe(v -> {
             Mockito.verify(fileSystem).load(eq(id));
+            Mockito.verify(fileMetadataRegistry).load(eq(id));
             async.complete();
         });
     }
