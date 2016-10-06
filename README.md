@@ -2,7 +2,7 @@
 
 Distributed video converter, based on [Vert.x v3](http://vertx.io/) and [RxJava](https://github.com/ReactiveX/RxJava).
 
-[![Build Status](https://secure.travis-ci.org/KengoTODA/brownie.png)](http://travis-ci.org/KengoTODA/brownie)
+[![Build Status](https://travis-ci.org/KengoTODA/brownie.svg?branch=master)](https://travis-ci.org/KengoTODA/brownie)
 [![Coverage Status](https://coveralls.io/repos/github/KengoTODA/brownie/badge.svg?branch=master)](https://coveralls.io/github/KengoTODA/brownie?branch=master)
 [![codebeat badge](https://codebeat.co/badges/7e6fb749-341e-4b11-9042-9b1656370723)](https://codebeat.co/projects/github-com-kengotoda-brownie)
 
