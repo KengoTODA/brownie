@@ -6,7 +6,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -25,12 +24,21 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import rx.Observable;
-import rx.Single;
 
 /**
- * A server which provides API to manage file storage.
+ * <p>A server which provides API to manage file storage.
  * It abstracts distributed file system such as AWS S3.
+ * This server provides following REST API:</p>
+ *
+ * <ul>
+ * <li>{@code GET /file/}, which returns JsonArray which represents list of {@link FileMetadata}.</li>
+ * <li>{@code GET /file/:fileId}, which returns file content as response body, and {@link FileMetadata} as HTTP headers. It responds 404 if specified file does not exist.</li>
+ * <li>{@code HEAD /file/:fileId}, which returns file metadata as HTTP headers. It responds 404 if specified file does not exist.</li>
+ * <li>{@code POST /file/}, which stores uploaded file to storage and returns {@link FileMetadata} as HTTP headers.</li>
+ * <li>{@code DELETE /file/:fileId}, which deletes stored file in storage. It responds 404 if specified file does not exist.</li>
+ * </ul>
+ *
+ * <p>File storage does not support update operation, so this server provides no {@code PATCH} method nor {@code PUT} method.</p>
  */
 @RequiredArgsConstructor(
         onConstructor = @__(@Inject),
@@ -140,7 +148,7 @@ class FileStorageServer extends AbstractVerticle {
         fileTransporter
             .download(UUID.fromString(fileId))
             .subscribe(tuple -> {
-                response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), tuple._1.getMimeType().toString());
+                response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json"); // type of THIS response, not file
                 response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(tuple._1.getGenerated()));
                 response.putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(tuple._1.getContentLength()));
                 response.putHeader("File-Id", tuple._1.getFileId().toString());
@@ -150,33 +158,33 @@ class FileStorageServer extends AbstractVerticle {
     }
 
     private void postFile(RoutingContext ctx) {
-        Set<FileUpload> uploadedFile = ctx.fileUploads();
-        if (uploadedFile.isEmpty()) {
-            ctx.fail(new IllegalArgumentException("Please upload file"));
+        Set<FileUpload> uploadedFiles = ctx.fileUploads();
+        if (uploadedFiles.isEmpty()) {
+            ctx.fail(new IllegalArgumentException("Please upload one file"));
+            return;
+        } else if (uploadedFiles.size() > 1) {
+            ctx.fail(new IllegalArgumentException("Please upload only one file"));
+            return;
         }
 
-        Observable<FileMetadata> result = uploadedFile.stream().map(fileUpload -> {
-            UUID fileId = idGenerator.generateUuidV1();
-            return fileTransporter.upload(fileId,
-                    fileUpload.fileName(),
-                    new File(fileUpload.uploadedFileName()),
-                    MimeType.valueOf(fileUpload.contentType()));
-        })
-        .map(Single::toObservable)
-        .collect(Collectors.reducing(Observable.empty(), Observable::merge));
-
         HttpServerResponse response = ctx.response()
-                .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
-                .write("[");
+                .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
+        FileUpload file = uploadedFiles.toArray(new FileUpload[1])[0];
+        UUID fileId = idGenerator.generateUuidV1();
 
-        result.map(FileMetadata::toJsonObject).subscribe(json -> {
-            if (response.bytesWritten() > 1) {
-                response.write(",");
-            }
-            response.write(json.toString());
-        }, ctx::fail, () -> {
-            response.end("]");
-        });
+        fileTransporter.upload(fileId,
+                file.fileName(),
+                new File(file.uploadedFileName()),
+                MimeType.valueOf(file.contentType()))
+        .map(metadata -> {
+            response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(metadata.getGenerated()));
+            response.putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(metadata.getContentLength()));
+            response.putHeader("File-Id", metadata.getFileId().toString());
+            response.putHeader("File-Name", metadata.getName());
+            return metadata;
+        }).map(FileMetadata::toJsonObject).subscribe(json -> {
+            response.write(new JsonObject().toString());
+        }, ctx::fail);
     }
 
     private void deleteFile(RoutingContext ctx) {
