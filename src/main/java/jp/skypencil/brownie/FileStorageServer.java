@@ -4,7 +4,6 @@ import java.io.File;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -15,9 +14,11 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.rx.java.ObservableFuture;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.buffer.Buffer;
+import io.vertx.rxjava.core.file.FileSystem;
 import io.vertx.rxjava.core.http.HttpServer;
+import io.vertx.rxjava.core.http.HttpServerRequest;
 import io.vertx.rxjava.core.http.HttpServerResponse;
-import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import lombok.AccessLevel;
@@ -52,6 +53,8 @@ class FileStorageServer extends AbstractVerticle {
 
     private static final DateTimeFormatter INSTANT_FORMATTER = DateTimeFormatter
             .ofPattern(HTTP_DATE_FORMAT).withLocale(Locale.ENGLISH).withZone(ZoneId.of("GMT"));
+
+    private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
 
     private final Vertx vertx;
 
@@ -158,31 +161,30 @@ class FileStorageServer extends AbstractVerticle {
     }
 
     private void postFile(RoutingContext ctx) {
-        Set<FileUpload> uploadedFiles = ctx.fileUploads();
-        if (uploadedFiles.isEmpty()) {
-            ctx.fail(new IllegalArgumentException("Please upload one file"));
-            return;
-        } else if (uploadedFiles.size() > 1) {
-            ctx.fail(new IllegalArgumentException("Please upload only one file"));
-            return;
-        }
-
-        HttpServerResponse response = ctx.response()
-                .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
-        FileUpload file = uploadedFiles.toArray(new FileUpload[1])[0];
+        HttpServerRequest req = ctx.request().setExpectMultipart(true);
         UUID fileId = idGenerator.generateUuidV1();
 
-        fileTransporter.upload(fileId,
-                file.fileName(),
-                new File(file.uploadedFileName()),
-                MimeType.valueOf(file.contentType()))
-        .map(metadata -> {
+        String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE.toString());
+        String fileName = req.getHeader("File-Name");
+        File localFile = new File(TEMP_DIR, fileId.toString());
+
+        HttpServerResponse response = ctx.response();
+        FileSystem fileSystem = vertx.fileSystem();
+        req.toObservable().reduce(Buffer.buffer(), Buffer::appendBuffer).toSingle().flatMap(data -> {
+            return fileSystem.writeFileObservable(localFile.getAbsolutePath(), data).toSingle();
+        }).flatMap(v -> {
+            return fileTransporter.upload(fileId,
+                fileName,
+                localFile,
+                MimeType.valueOf(contentType));
+        }).map(metadata -> {
+            response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
             response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(metadata.getGenerated()));
             response.putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(metadata.getContentLength()));
-            response.putHeader("File-Id", metadata.getFileId().toString());
+            response.putHeader("File-Id", fileId.toString());
             response.putHeader("File-Name", metadata.getName());
             return metadata;
-        }).map(FileMetadata::toJsonObject).subscribe(json -> {
+        }).subscribe(json -> {
             response.end(new JsonObject().toString());
         }, ctx::fail);
     }

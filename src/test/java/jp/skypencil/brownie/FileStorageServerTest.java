@@ -1,5 +1,7 @@
 package jp.skypencil.brownie;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -212,4 +214,34 @@ public class FileStorageServerTest {
             req.end();
         }, context::fail);
     }
-}
+
+    @Test
+    public void testPost(TestContext context) throws IOException {
+        Async async = context.async();
+        UUID fileId = UUID.randomUUID();
+        File file = folder.newFile();
+        Files.write("file", file, StandardCharsets.UTF_8);
+        MimeType mimetype = MimeType.valueOf("text/plain");
+        FileMetadata metadata = new FileMetadata(fileId, "name", mimetype, 4, Instant.now());
+        doReturn(Single.just(metadata)).when(fileTransporter)
+                .upload(any(UUID.class), eq(metadata.getName()), any(File.class), eq(mimetype));
+
+        server.getListenedFuture().subscribe(v -> {
+            HttpClientRequest req = vertx.createHttpClient().post(HTTP_PORT, "localhost", "/file/")
+                    .setChunked(true)
+                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), mimetype.toString())
+                    .putHeader("File-Name", metadata.getName());
+            req.toObservable()
+                    .toSingle()
+                    .subscribe(res -> {
+                        context.assertNotNull(res.getHeader("File-Id"));
+                        context.assertNotEquals(fileId, res.getHeader("File-Id"));
+                        context.assertEquals("application/json", res.getHeader(HttpHeaders.CONTENT_TYPE.toString()));
+                        context.assertEquals("name", res.getHeader("File-Name"));
+                        async.complete();
+                    }, context::fail);
+            vertx.fileSystem()
+                .readFileObservable(file.getAbsolutePath())
+                .subscribe(req::write, context::fail, req::end);
+        }, context::fail);
+    }}
