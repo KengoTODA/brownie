@@ -3,14 +3,23 @@ package jp.skypencil.brownie;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
+import com.google.common.io.Files;
+
 import io.vertx.core.Context;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -22,6 +31,7 @@ import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
 import rx.Observable;
 import rx.Single;
+import scala.Tuple2;
 
 @RunWith(VertxUnitRunner.class)
 public class FileStorageServerTest {
@@ -30,6 +40,9 @@ public class FileStorageServerTest {
     private Vertx vertx;
     private FileStorageServer server;
     private FileTransporter fileTransporter;
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
 
     @Before
     public void setUp() {
@@ -65,6 +78,56 @@ public class FileStorageServerTest {
                         context.assertEquals(new JsonArray(), buffer.toJsonArray());
                         async.complete();
                     }, context::fail);
+            req.end();
+        }, context::fail);
+    }
+
+    @Test
+    public void testGet(TestContext context) throws IOException {
+        Async async = context.async();
+        UUID fileId = UUID.randomUUID();
+        File file = folder.newFile();
+        Files.write("file", file, StandardCharsets.UTF_8);
+
+        FileMetadata metadata = new FileMetadata(fileId, "name", MimeType.valueOf("text/plain"), 4, Instant.parse("2007-12-03T10:15:30.00Z"));
+        doReturn(Single.just(Tuple2.apply(metadata, file))).when(fileTransporter).download(fileId);
+
+        server.getListenedFuture().subscribe(v -> {
+            HttpClientRequest req = vertx.createHttpClient().get(HTTP_PORT, "localhost", "/file/" + fileId);
+            req.toObservable()
+                    .map(res -> {
+                        context.assertEquals(
+                                "Mon, 03 12 2007 10:15:30 GMT",
+                                res.getHeader(HttpHeaders.LAST_MODIFIED.toString()));
+                        return res;
+                    })
+                    .flatMap(HttpClientResponse::toObservable)
+                    .reduce(Buffer.buffer(), Buffer::appendBuffer)
+                    .toSingle()
+                    .subscribe(buffer -> {
+                        context.assertEquals("file", buffer.toString());
+                        async.complete();
+                    }, context::fail);
+            req.end();
+        }, context::fail);
+    }
+
+    @Test
+    public void testGetNotExistFile(TestContext context) throws IOException {
+        Async async = context.async();
+        UUID fileId = UUID.randomUUID();
+        File file = folder.newFile();
+        Files.write("file", file, StandardCharsets.UTF_8);
+
+        doReturn(Single.error(new BrownieFileNotFoundException(fileId))).when(fileTransporter).download(fileId);
+
+        server.getListenedFuture().subscribe(v -> {
+            HttpClientRequest req = vertx.createHttpClient().get(HTTP_PORT, "localhost", "/file/" + fileId);
+            req.toObservable()
+                .subscribe(res -> {
+                    context.assertEquals(404, res.statusCode());
+                    async.complete();
+                }, context::fail);
             req.end();
         }, context::fail);
     }

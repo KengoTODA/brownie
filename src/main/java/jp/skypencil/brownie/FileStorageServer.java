@@ -1,6 +1,9 @@
 package jp.skypencil.brownie;
 
 import java.io.File;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,6 +37,14 @@ import rx.Single;
         access = AccessLevel.PACKAGE) // for unit test
 @Slf4j
 class FileStorageServer extends AbstractVerticle {
+    /**
+     * RFC850 format, which is used by {@code Last-Modified} header
+     */
+    private static final String HTTP_DATE_FORMAT = "EEE, dd MM yyyy HH:mm:ss z";
+
+    private static final DateTimeFormatter INSTANT_FORMATTER = DateTimeFormatter
+            .ofPattern(HTTP_DATE_FORMAT).withLocale(Locale.ENGLISH).withZone(ZoneId.of("GMT"));
+
     private final Vertx vertx;
 
     private final FileTransporter fileTransporter;
@@ -113,6 +124,7 @@ class FileStorageServer extends AbstractVerticle {
             .subscribe(tuple -> {
                 String filePath = tuple._2.getAbsolutePath();
                 response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), tuple._1.getMimeType().toString());
+                response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(tuple._1.getGenerated()));
                 response.sendFile(filePath); // CONTENT_LENGTH will be put by vert.x
             }, ctx::fail);
     }
