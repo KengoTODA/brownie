@@ -116,13 +116,57 @@ public class FileStorageServerTest {
     public void testGetNotExistFile(TestContext context) throws IOException {
         Async async = context.async();
         UUID fileId = UUID.randomUUID();
-        File file = folder.newFile();
-        Files.write("file", file, StandardCharsets.UTF_8);
 
         doReturn(Single.error(new BrownieFileNotFoundException(fileId))).when(fileTransporter).download(fileId);
 
         server.getListenedFuture().subscribe(v -> {
             HttpClientRequest req = vertx.createHttpClient().get(HTTP_PORT, "localhost", "/file/" + fileId);
+            req.toObservable()
+                .subscribe(res -> {
+                    context.assertEquals(404, res.statusCode());
+                    async.complete();
+                }, context::fail);
+            req.end();
+        }, context::fail);
+    }
+
+    @Test
+    public void testHead(TestContext context) throws IOException {
+        Async async = context.async();
+        UUID fileId = UUID.randomUUID();
+
+        FileMetadata metadata = new FileMetadata(fileId, "name", MimeType.valueOf("text/plain"), 4, Instant.parse("2007-12-03T10:15:30.00Z"));
+        doReturn(Single.just(Tuple2.apply(metadata, null))).when(fileTransporter).download(fileId);
+
+        server.getListenedFuture().subscribe(v -> {
+            HttpClientRequest req = vertx.createHttpClient().head(HTTP_PORT, "localhost", "/file/" + fileId);
+            req.toObservable()
+                    .map(res -> {
+                        context.assertEquals(
+                                "Mon, 03 12 2007 10:15:30 GMT",
+                                res.getHeader(HttpHeaders.LAST_MODIFIED.toString()));
+                        return res;
+                    })
+                    .flatMap(HttpClientResponse::toObservable)
+                    .reduce(Buffer.buffer(), Buffer::appendBuffer)
+                    .toSingle()
+                    .subscribe(buffer -> {
+                        context.assertEquals("", buffer.toString());
+                        async.complete();
+                    }, context::fail);
+            req.end();
+        }, context::fail);
+    }
+
+    @Test
+    public void testHeadNotExistFile(TestContext context) throws IOException {
+        Async async = context.async();
+        UUID fileId = UUID.randomUUID();
+
+        doReturn(Single.error(new BrownieFileNotFoundException(fileId))).when(fileTransporter).download(fileId);
+
+        server.getListenedFuture().subscribe(v -> {
+            HttpClientRequest req = vertx.createHttpClient().head(HTTP_PORT, "localhost", "/file/" + fileId);
             req.toObservable()
                 .subscribe(res -> {
                     context.assertEquals(404, res.statusCode());

@@ -81,6 +81,7 @@ class FileStorageServer extends AbstractVerticle {
         Router router = Router.router(vertx);
         router.get("/file/").handler(this::listFile);
         router.get("/file/:fileId").handler(this::getFile).failureHandler(this::judgeStatusCode);
+        router.head("/file/:fileId").handler(this::headFile).failureHandler(this::judgeStatusCode);
         router.post("/file").handler(this::postFile);
         router.delete("/file/:fileId").handler(this::deleteFile).failureHandler(this::judgeStatusCode);
         return router;
@@ -126,6 +127,25 @@ class FileStorageServer extends AbstractVerticle {
                 response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), tuple._1.getMimeType().toString());
                 response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(tuple._1.getGenerated()));
                 response.sendFile(filePath); // CONTENT_LENGTH will be put by vert.x
+                response.putHeader("File-Id", tuple._1.getFileId().toString());
+                response.putHeader("File-Name", tuple._1.getName());
+            }, ctx::fail);
+    }
+
+    private void headFile(RoutingContext ctx) {
+        String fileId = ctx.request().getParam("fileId");
+        HttpServerResponse response = ctx.response();
+        log.debug("Requested to return file information which has fileId {}", fileId);
+
+        fileTransporter
+            .download(UUID.fromString(fileId))
+            .subscribe(tuple -> {
+                response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), tuple._1.getMimeType().toString());
+                response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(tuple._1.getGenerated()));
+                response.putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(tuple._1.getContentLength()));
+                response.putHeader("File-Id", tuple._1.getFileId().toString());
+                response.putHeader("File-Name", tuple._1.getName());
+                response.end();
             }, ctx::fail);
     }
 
