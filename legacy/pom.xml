@@ -70,6 +70,10 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
     </dependency>
+    <dependency>
+      <groupId>jp.skypencil.brownie</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

@@ -26,6 +26,8 @@ class BrownieModule extends AbstractModule implements Module {
 
     @Override
     protected void configure() {
+        install(new CommonModule());
+
         bind(Vertx.class).toInstance(vertx);
         bind(AsyncSQLClient.class).toInstance(sqlClient);
         bind(DnsClient.class).toInstance(dnsClient);
@@ -37,7 +39,6 @@ class BrownieModule extends AbstractModule implements Module {
         bind(FileEncoder.class).to(FileEncoderFFmpeg.class);
         bind(ThumbnailGenerator.class).to(ThumbnailGeneratorFFmpeg.class);
 
-        bind(IdGenerator.class).toInstance(new IdGenerator());
         bind(String.class).annotatedWith(Names.named("mountedDir")).toInstance(mountedDir);
     }
 }

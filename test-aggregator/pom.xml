@@ -16,8 +16,11 @@
   <dependencies>
     <dependency>
       <groupId>jp.skypencil.brownie</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jp.skypencil.brownie</groupId>
       <artifactId>legacy</artifactId>
-      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
