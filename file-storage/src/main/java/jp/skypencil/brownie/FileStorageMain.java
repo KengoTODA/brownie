@@ -7,36 +7,35 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava.core.AbstractVerticle;
+import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import io.vertx.rxjava.servicediscovery.spi.ServiceImporter;
+import io.vertx.servicediscovery.consul.ConsulServiceImporter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class FileStorageMain extends AbstractVerticle {
     private AsyncSQLClient sqlClient;
     private FileStorageServer server;
-    private String deploymentId;
+    private ServiceDiscovery discovery;
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         Injector injector = createInjector();
         server = injector.getInstance(FileStorageServer.class);
         DeploymentOptions options = new DeploymentOptions().setConfig(config());
-        getVertx().deployVerticle(server, options, ar -> {
-            if (ar.failed()) {
-                startFuture.fail(ar.cause());
-            } else {
-                deploymentId = ar.result();
+        RxHelper.deployVerticle(vertx, server, options)
+            .subscribe(record -> {
+                log.info("FileStorageMain is started");
                 startFuture.complete();
-            }
-        });
-
-        log.info("FileStorageMain is started");
+            }, startFuture::fail);
     }
 
     @Override
     public void stop(Future<Void> stopFuture) {
-        vertx.undeployObservable(deploymentId)
+        vertx.undeployObservable(server.deploymentID())
             .flatMap(v -> {
                 return sqlClient.closeObservable();
             })
@@ -52,7 +51,13 @@ public class FileStorageMain extends AbstractVerticle {
         String mountedDir = config().getString("BROWNIE_MOUNTED_DIR", System.getProperty("java.io.tmpdir", "/tmp"));
         log.info("Initializing module to use {} as temporal directory", mountedDir);
 
-        return Guice.createInjector(new FileStorageModule(vertx, sqlClient, mountedDir));
+        discovery = ServiceDiscovery.create(vertx)
+                .registerServiceImporter(new ServiceImporter(new ConsulServiceImporter()), new JsonObject()
+                    .put("host", config().getString("BROWNIE_CONSUL_HOST", "localhost"))
+                    .put("port", config().getInteger("BROWNIE_CONSUL_PORT", 8500))
+                    .put("scan-period", 2000));
+
+        return Guice.createInjector(new FileStorageModule(vertx, sqlClient, discovery, mountedDir));
     }
 
     private JsonObject createPostgresConfig() {

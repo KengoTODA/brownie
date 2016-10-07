@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import io.vertx.rxjava.core.Vertx;
 import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 class FileStorageModule extends AbstractModule {
     private final Vertx vertx;
     private final AsyncSQLClient sqlClient;
+    private final ServiceDiscovery discovery;
     private final String mountedDir;
 
     @Override
@@ -22,6 +24,7 @@ class FileStorageModule extends AbstractModule {
         bind(Vertx.class).toInstance(vertx);
         bind(AsyncSQLClient.class).toInstance(sqlClient);
         bind(SharedFileSystem.class).to(MountedFileSystem.class);
+        bind(ServiceDiscovery.class).toInstance(discovery);
         bind(String.class).annotatedWith(Names.named("mountedDir")).toInstance(mountedDir);
     }
 }

@@ -6,7 +6,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
 
+import javax.activation.MimeType;
 import javax.inject.Inject;
+
+import com.hazelcast.core.IdGenerator;
 
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
@@ -20,6 +23,9 @@ import io.vertx.rxjava.core.http.HttpServerRequest;
 import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import io.vertx.rxjava.servicediscovery.types.HttpEndpoint;
+import io.vertx.servicediscovery.Record;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,16 +66,29 @@ class FileStorageServer extends AbstractVerticle {
 
     private final IdGenerator idGenerator;
 
+    private final ServiceDiscovery discovery;
+
     private HttpServer server;
+
+    private String registration;
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         log.info("Initializing FrontStorageServer...");
 
         Router router = createRouter();
+        String httpHost = config().getString("BROWNIE_CLUSTER_HTTP_HOST", "localhost");
         Integer httpPort = config().getInteger("BROWNIE_CLUSTER_HTTP_PORT", 8080);
         server = vertx.createHttpServer().requestHandler(router::accept);
         server.listenObservable(httpPort)
+                .flatMap(v -> {
+                    Record record = HttpEndpoint.createRecord("file-storage", httpHost, httpPort, "/file");
+                    return discovery.publishObservable(record);
+                })
+                .map(record -> {
+                    registration = record.getRegistration();
+                    return record;
+                })
                 .subscribe(v -> {
                     log.info("HTTP server is listening {} port", httpPort);
                     startFuture.complete();
@@ -81,7 +100,11 @@ class FileStorageServer extends AbstractVerticle {
         if (server == null) {
             future.fail(new IllegalStateException("This vertical has not been started yet"));
         } else {
-            server.closeObservable().subscribe(future::complete, future::fail);
+            discovery.unpublishObservable(registration)
+                .flatMap(v -> {
+                    return server.closeObservable();
+                })
+                .subscribe(future::complete, future::fail);
         }
     }
 
