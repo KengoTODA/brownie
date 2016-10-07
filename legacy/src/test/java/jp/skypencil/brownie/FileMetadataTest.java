@@ -1,23 +1,21 @@
 package jp.skypencil.brownie;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static com.google.common.truth.Truth.assertThat;
 
 import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.Test;
 
+import io.vertx.core.json.JsonObject;
+
 public class FileMetadataTest {
     @Test
     public void testToString() {
         String string = new FileMetadata(UUID.randomUUID(), "name",
                 MimeType.valueOf("text/plain"), 0, Instant.now()).toString();
-        assertThat(string, is(containsString("name=name")));
-        assertThat(string, is(containsString("mimeType=text/plain")));
+        assertThat(string).contains("name=name");
+        assertThat(string).contains("mimeType=text/plain");
     }
 
     @Test
@@ -28,19 +26,32 @@ public class FileMetadataTest {
         assertThat(
                 new FileMetadata(metadata.getFileId(), "name",
                         MimeType.valueOf("text/plain"), 0,
-                        metadata.getGenerated()).hashCode(),
-                is(equalTo(hashCode)));
+                        metadata.getGenerated()).hashCode())
+                .isEqualTo(hashCode);
         assertThat(new FileMetadata(UUID.randomUUID(), "name",
-                MimeType.valueOf("text/plain"), 0, Instant.now()).hashCode(),
-                is(not(equalTo(hashCode))));
+                MimeType.valueOf("text/plain"), 0, Instant.now()).hashCode())
+                .isNotEqualTo(hashCode);
     }
 
     @Test
     public void testToJson() {
         String json = new FileMetadata(UUID.randomUUID(), "name",
                 MimeType.valueOf("text/plain"), 0, Instant.now()).toJson();
-        assertThat(json, is(containsString("\"fileId\"")));
-        assertThat(json, is(containsString("\"fileName\":\"name\"")));
-        assertThat(json, is(containsString("\"text/plain\"")));
+        assertThat(json).contains("\"fileId\"");
+        assertThat(json).contains("\"fileName\":\"name\"");
+        assertThat(json).contains("\"text/plain\"");
+    }
+
+    @Test
+    public void testToJsonObject() {
+        UUID uuid = UUID.randomUUID();
+        Instant instant = Instant.now();
+        JsonObject json = new FileMetadata(uuid, "name",
+                MimeType.valueOf("text/plain"), 0, instant).toJsonObject();
+        assertThat(json.getString("id")).isEqualTo(uuid.toString());
+        assertThat(json.getString("name")).isEqualTo("name");
+        assertThat(json.getString("mime_type")).isEqualTo("text/plain");
+        assertThat(json.getInteger("content_length")).isEqualTo(0);
+        assertThat(json.getInstant("generated")).isEqualTo(instant);
     }
 }
