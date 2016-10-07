@@ -6,10 +6,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
 
-import javax.activation.MimeType;
 import javax.inject.Inject;
 
-import com.hazelcast.core.IdGenerator;
 
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
