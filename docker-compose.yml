@@ -31,13 +31,13 @@ services:
       - "80:80"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
-      - ./src/main/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
+      - ./legacy/src/main/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
     depends_on:
       - front
     environment:
       - DEFAULT_HOST=front.service.consul
   front:
-    build: .
+    build: legacy
     volumes:
       - storage:/mnt/brownie
     depends_on:
@@ -67,7 +67,7 @@ services:
     depends_on:
       - consul
     volumes:
-      - ./src/main/sql:/docker-entrypoint-initdb.d
+      - ./legacy/src/main/sql:/docker-entrypoint-initdb.d
 volumes:
   storage:
     external: false

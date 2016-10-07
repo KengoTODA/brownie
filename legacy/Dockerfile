@@ -46,7 +46,7 @@ RUN ln -s $HOME/bin/ffmpeg /usr/local/bin/
 # Install brownie
 
 RUN mkdir -p /etc/brownie
-COPY target/brownie-*.jar /etc/brownie/brownie.jar
+COPY target/legacy-*.jar /etc/brownie/brownie.jar
 COPY application-conf.json /etc/brownie/application-conf.json
 
 # EXPOSE HTTP (8080) and Hazelcast ports
