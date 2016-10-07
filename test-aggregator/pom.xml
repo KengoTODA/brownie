@@ -20,6 +20,10 @@
     </dependency>
     <dependency>
       <groupId>jp.skypencil.brownie</groupId>
+      <artifactId>file-storage</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jp.skypencil.brownie</groupId>
       <artifactId>legacy</artifactId>
     </dependency>
   </dependencies>

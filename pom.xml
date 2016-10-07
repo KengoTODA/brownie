@@ -106,6 +106,11 @@
       </dependency>
       <dependency>
         <groupId>jp.skypencil.brownie</groupId>
+        <artifactId>file-storage</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jp.skypencil.brownie</groupId>
         <artifactId>legacy</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -224,6 +229,7 @@
   </repositories>
   <modules>
     <module>common</module>
+    <module>file-storage</module>
     <module>legacy</module>
     <module>test-aggregator</module>
   </modules>

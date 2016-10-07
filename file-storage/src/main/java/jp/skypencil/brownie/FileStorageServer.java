@@ -11,7 +11,6 @@ import javax.inject.Inject;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
-import io.vertx.rx.java.ObservableFuture;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
@@ -22,7 +21,6 @@ import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,28 +62,27 @@ class FileStorageServer extends AbstractVerticle {
 
     private HttpServer server;
 
-    @Getter(AccessLevel.PACKAGE)
-    private final ObservableFuture<HttpServer> listenedFuture = new ObservableFuture<>();
-
     @Override
-    public void start() {
+    public void start(Future<Void> startFuture) throws Exception {
         log.info("Initializing FrontStorageServer...");
 
         Router router = createRouter();
         Integer httpPort = config().getInteger("BROWNIE_CLUSTER_HTTP_PORT", 8080);
-        server = vertx.createHttpServer().requestHandler(router::accept).listen(httpPort, listenedFuture.toHandler());
-        log.info("HTTP server is listening {} port", httpPort);
+        server = vertx.createHttpServer().requestHandler(router::accept);
+        server.listenObservable(httpPort)
+                .subscribe(v -> {
+                    log.info("HTTP server is listening {} port", httpPort);
+                    startFuture.complete();
+                }, startFuture::fail);
     }
 
     @Override
     public void stop(Future<Void> future) {
-        server.close(ar -> {
-            if (ar.failed()) {
-                future.fail(ar.cause());
-            } else {
-                future.complete();
-            }
-        });
+        if (server == null) {
+            future.fail(new IllegalStateException("This vertical has not been started yet"));
+        } else {
+            server.closeObservable().subscribe(future::complete, future::fail);
+        }
     }
 
     private Router createRouter() {
