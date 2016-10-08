@@ -32,6 +32,7 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import rx.Observable;
 import rx.Single;
 import scala.Tuple2;
@@ -51,7 +52,7 @@ public class FileStorageServerTest {
     public void setUp(TestContext context) throws Exception {
         vertx = Vertx.vertx();
         fileTransporter = mock(FileTransporter.class);
-        server = new FileStorageServer(vertx, fileTransporter, new IdGenerator());
+        server = new FileStorageServer(vertx, fileTransporter, new IdGenerator(), ServiceDiscovery.create(vertx));
 
         Context ctx = mock(Context.class);
         doReturn(new JsonObject().put("BROWNIE_CLUSTER_HTTP_PORT", HTTP_PORT)).when(ctx).config();

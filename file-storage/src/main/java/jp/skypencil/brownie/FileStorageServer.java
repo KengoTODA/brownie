@@ -8,7 +8,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -79,18 +78,18 @@ class FileStorageServer extends AbstractVerticle {
         Integer httpPort = config().getInteger("BROWNIE_CLUSTER_HTTP_PORT", 8080);
         server = vertx.createHttpServer().requestHandler(router::accept);
         server.listenObservable(httpPort)
-                .flatMap(v -> {
-                    Record record = HttpEndpoint.createRecord("file-storage", httpHost, httpPort, "/file");
-                    return discovery.publishObservable(record);
-                })
-                .map(record -> {
-                    registration = record.getRegistration();
-                    return record;
-                })
-                .subscribe(v -> {
-                    log.info("HTTP server is listening {} port", httpPort);
-                    startFuture.complete();
-                }, startFuture::fail);
+            .flatMap(v -> {
+                Record record = HttpEndpoint.createRecord("file-storage", httpHost, httpPort, "/file");
+                return discovery.publishObservable(record);
+            })
+            .map(record -> {
+                registration = record.getRegistration();
+                return record;
+            })
+            .subscribe(v -> {
+                log.info("HTTP server is listening {} port", httpPort);
+                startFuture.complete();
+            }, startFuture::fail);
     }
 
     @Override
