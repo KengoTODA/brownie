@@ -7,11 +7,14 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava.core.AbstractVerticle;
-import io.vertx.rxjava.core.dns.DnsClient;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import io.vertx.rxjava.servicediscovery.spi.ServiceImporter;
+import io.vertx.servicediscovery.consul.ConsulServiceImporter;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MainVerticle extends AbstractVerticle {
     private AsyncSQLClient sqlClient;
-    private DnsClient dnsClient;
+    private ServiceDiscovery discovery;
 
     /**
      * An entry point for debugging
@@ -54,26 +57,32 @@ public class MainVerticle extends AbstractVerticle {
         log.info("Creating PostgreSQLClient", postgresConfig);
         sqlClient = PostgreSQLClient.createShared(vertx, postgresConfig);
 
-        String dnsHost = config().getString("BROWNIE_DNS_HOST", "localhost");
-        Integer dnsPort = config().getInteger("BROWNIE_DNS_PORT", 53);
-        log.info("Creating DnsClient for {}:{}", dnsHost, dnsPort);
-        dnsClient = vertx.createDnsClient(dnsPort, dnsHost);
-
         String mountedDir = config().getString("BROWNIE_MOUNTED_DIR", System.getProperty("java.io.tmpdir", "/tmp"));
         log.info("Initializing module to use {} as temporal directory", mountedDir);
 
-        Injector injector = Guice.createInjector(new BrownieModule(vertx, sqlClient, dnsClient, mountedDir));
+        discovery = ServiceDiscovery.create(vertx)
+                .registerServiceImporter(new ServiceImporter(new ConsulServiceImporter()), new JsonObject()
+                    .put("host", config().getString("BROWNIE_CONSUL_HOST", "localhost"))
+                    .put("port", config().getInteger("BROWNIE_CONSUL_PORT", 8500))
+                    .put("scan-period", 2000));
+
+
+        Injector injector = Guice.createInjector(new BrownieModule(vertx, sqlClient, mountedDir, discovery));
         return injector;
     }
 
     @Override
-    public void stop() throws Exception {
-        sqlClient.close();
-
-        Set<String> deploymentIDs = getVertx().deploymentIDs();
-        deploymentIDs.forEach(deploymentID -> {
-            getVertx().undeploy(deploymentID);
-        });
+    public void stop(Future<Void> stopFuture) throws Exception {
+        sqlClient.closeObservable()
+            .toSingle()
+            .map(v -> {
+                Set<String> deploymentIDs = getVertx().deploymentIDs();
+                deploymentIDs.forEach(deploymentID -> {
+                    getVertx().undeploy(deploymentID);
+                });
+                return v;
+            })
+            .subscribe(stopFuture::complete, stopFuture::fail);
     }
 
     private JsonObject createPostgresConfig() {

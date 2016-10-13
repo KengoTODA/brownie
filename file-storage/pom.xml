@@ -83,6 +83,16 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- Necessary to avoid ArrayIndexOutOfBoundsException at jacoco:report -->
+            <exclude>jp/skypencil/brownie/registry/FileMetadataRegistryOnPostgres</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>

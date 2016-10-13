@@ -38,8 +38,6 @@ services:
       - DEFAULT_HOST=front.service.consul
   front:
     build: legacy
-    volumes:
-      - storage:/mnt/brownie
     depends_on:
       - consul
       - db
@@ -54,20 +52,56 @@ services:
     environment:
       - VIRTUAL_HOST=front.service.consul
       - VIRTUAL_PORT=8080
+      - BROWNIE_CONSUL_HOST=consul
+      - BROWNIE_POSTGRES_HOST=db
   db:
     image: postgres:9
     environment:
       - POSTGRES_USER=brownie
       - POSTGRES_PASSWORD=brownie
       - POSTGRES_DB=brownie
-    ports:
-      - "5432:5432" # for JUnit test
     expose:
       - "5432"
+    ports:
+      - "5432:5432" # for JUnit
     depends_on:
       - consul
     volumes:
       - ./legacy/src/main/sql:/docker-entrypoint-initdb.d
+  file_storage:
+    build: file-storage
+    volumes:
+      - storage:/mnt/brownie
+    depends_on:
+      - consul
+      - file_storage_db
+    dns:
+      - consul
+    dns_search:
+      - service.consul
+    expose:
+      - "8080"
+      - "5701"
+      - "54327/udp"
+    environment:
+      - VIRTUAL_HOST=storage.service.consul
+      - VIRTUAL_PORT=8080
+      - BROWNIE_CONSUL_HOST=consul
+      - BROWNIE_POSTGRES_HOST=file_storage_db
+  file_storage_db:
+    image: postgres:9
+    environment:
+      - POSTGRES_USER=brownie
+      - POSTGRES_PASSWORD=brownie
+      - POSTGRES_DB=brownie
+    expose:
+      - "5432"
+    ports:
+      - "15432:5432" # for JUnit
+    depends_on:
+      - consul
+    volumes:
+      - ./file-storage/src/main/sql:/docker-entrypoint-initdb.d
 volumes:
   storage:
     external: false
