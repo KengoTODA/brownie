@@ -1,5 +1,6 @@
 package jp.skypencil.brownie.fs;
 
+import java.io.File;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -9,9 +10,10 @@ import javax.inject.Named;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.file.FileSystem;
-import rx.Observable;
+import lombok.extern.slf4j.Slf4j;
 import rx.Single;
 
+@Slf4j
 public class MountedFileSystem implements SharedFileSystem {
     private final String baseDir;
 
@@ -24,9 +26,14 @@ public class MountedFileSystem implements SharedFileSystem {
     }
 
     @Override
-    public Observable<Buffer> load(UUID id) {
+    public Single<File> load(UUID id) {
         String path = baseDir + "/" + Objects.requireNonNull(id);
-        return rxJavaVertx.fileSystem().readFileObservable(path);
+        File file = new File(path);
+        if (!file.exists()) {
+            return Single.error(new IllegalArgumentException("File not found with fileId " + id));
+        }
+
+        return Single.just(file);
     }
 
     @Override
@@ -39,6 +46,10 @@ public class MountedFileSystem implements SharedFileSystem {
                 throw new IllegalArgumentException("Specified ID is already used: " + id);
             }
             return fileSystem.writeFileObservable(path, buffer).toSingle()
+                    .doOnSuccess(v -> {
+                        log.info("successfully stored file at {}, its size is {}",
+                                path, buffer.length());
+                    })
                     .map(v -> id);
         });
     }

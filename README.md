@@ -37,6 +37,13 @@ $ docker-compose up
 ```
 
 
+# How to test
+
+```
+$ docker-compose up -d --force-recreate db file_storage_db
+$ mvn clean verify
+```
+
 # Copyright and license
 
 Copyright 2015-2016 Kengo TODA

@@ -1,7 +1,8 @@
 package jp.skypencil.brownie.fs;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.junit.After;
@@ -11,7 +12,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
-import io.vertx.core.file.FileSystemException;
+import com.google.common.io.Files;
+
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -55,11 +57,8 @@ public class MountedFileSystemTest {
         fileSystem.load(id).subscribe(onNext -> {
             context.fail();
         }, error -> {
-            context.assertTrue(error instanceof FileSystemException);
-            context.assertTrue(error.getCause() instanceof NoSuchFileException);
+            context.assertTrue(error instanceof IllegalArgumentException);
             async.complete();
-        }, () -> {
-            context.fail();
         });
     }
 
@@ -69,9 +68,14 @@ public class MountedFileSystemTest {
         UUID id = UUID.randomUUID();
         Buffer buffer = Buffer.buffer("buffer");
         fileSystem.store(id, buffer).toObservable().flatMap(v -> {
-            return fileSystem.load(id);
-        }).subscribe(onNext -> {
-            context.assertEquals("buffer", onNext.toString());
+            return fileSystem.load(id).toObservable();
+        })
+        .subscribe(file -> {
+            try {
+                context.assertEquals("buffer", Files.toString(file, StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }, context::fail, () -> {
             async.complete();
         });
@@ -85,12 +89,11 @@ public class MountedFileSystemTest {
         fileSystem.store(id, buffer).flatMap(v -> {
             return fileSystem.delete(id);
         }).toObservable().flatMap(v -> {
-            return fileSystem.load(id);
+            return fileSystem.load(id).toObservable();
         }).subscribe(onNext -> {
             context.fail();
         }, error -> {
-            context.assertTrue(error instanceof FileSystemException);
-            context.assertTrue(error.getCause() instanceof NoSuchFileException);
+            context.assertTrue(error instanceof IllegalArgumentException);
             async.complete();
         }, () -> {
             context.fail();

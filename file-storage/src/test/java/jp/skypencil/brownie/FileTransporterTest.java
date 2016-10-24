@@ -21,10 +21,8 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
-import io.vertx.rxjava.core.buffer.Buffer;
 import jp.skypencil.brownie.fs.SharedFileSystem;
 import jp.skypencil.brownie.registry.FileMetadataRegistry;
-import rx.Observable;
 import rx.Single;
 
 @RunWith(VertxUnitRunner.class)
@@ -87,9 +85,10 @@ public class FileTransporterTest {
         FileMetadataRegistry fileMetadataRegistry = Mockito.mock(FileMetadataRegistry.class);
         FileTransporter transporter = new FileTransporter(vertx, fileSystem, fileMetadataRegistry); 
 
+        File source = new File("src/test/resources", "1MiB.dat");
         UUID id = UUID.randomUUID();
-        FileMetadata metadata = new FileMetadata(id, "name", MimeType.valueOf("text/plain"), 6, Instant.now());
-        doReturn(Observable.just(Buffer.buffer("buffer"))).when(fileSystem).load(eq(id));
+        FileMetadata metadata = new FileMetadata(id, "1MiB.dat", MimeType.valueOf("text/plain"), 1024 * 1024, Instant.now());
+        doReturn(Single.just(source)).when(fileSystem).load(eq(id));
         doReturn(Single.just(metadata)).when(fileMetadataRegistry).load(eq(id));
         transporter.download(id).subscribe(v -> {
             Mockito.verify(fileSystem).load(eq(id));

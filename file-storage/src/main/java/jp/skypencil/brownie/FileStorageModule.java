@@ -8,6 +8,8 @@ import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import io.vertx.rxjava.core.Vertx;
 import jp.skypencil.brownie.fs.MountedFileSystem;
 import jp.skypencil.brownie.fs.SharedFileSystem;
+import jp.skypencil.brownie.registry.FileMetadataRegistry;
+import jp.skypencil.brownie.registry.FileMetadataRegistryOnPostgres;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ class FileStorageModule extends AbstractModule {
         bind(AsyncSQLClient.class).toInstance(sqlClient);
         bind(SharedFileSystem.class).to(MountedFileSystem.class);
         bind(ServiceDiscovery.class).toInstance(discovery);
+        bind(FileMetadataRegistry.class).to(FileMetadataRegistryOnPostgres.class);
         bind(String.class).annotatedWith(Names.named("mountedDir")).toInstance(mountedDir);
     }
 }

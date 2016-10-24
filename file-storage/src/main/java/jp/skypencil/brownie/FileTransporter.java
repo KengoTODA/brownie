@@ -3,7 +3,6 @@ package jp.skypencil.brownie;
 import java.io.File;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.inject.Inject;
@@ -25,8 +24,6 @@ import scala.Tuple2;
         onConstructor = @__(@Inject),
         access = AccessLevel.PACKAGE) // only for unit test
 public class FileTransporter {
-    private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
-
     private final Vertx rxJavaVertx;
 
     private final SharedFileSystem observableFileSystem;
@@ -35,33 +32,11 @@ public class FileTransporter {
 
     /**
      * Download a file from shared file system, and store it to local file system.
+     * Caller should close returned {@link AsyncFile}.
      */
     Single<Tuple2<FileMetadata, File>> download(UUID id) {
         return observableFileMetadataRegistry.load(id)
-            .zipWith(store(observableFileSystem.load(id)), Tuple2::apply);
-    }
-
-    /**
-     * Store data to local file system, and return {@link File} instance
-     */
-    private Single<File> store(Observable<Buffer> data) {
-        String downloadedFile = TEMP_DIR + "/" + new com.eaio.uuid.UUID();
-        return rxJavaVertx.fileSystem()
-            .openObservable(downloadedFile, new OpenOptions().setWrite(true))
-            .toSingle()
-            .flatMap(opened -> {
-                CompletableFuture<File> future = new CompletableFuture<>();
-                data.subscribe(buffer -> {
-                        opened.write(buffer);
-                    }, error -> {
-                        opened.close();
-                        future.completeExceptionally(error);
-                    }, () -> {
-                        opened.close();
-                        future.complete(new File(downloadedFile));
-                    });
-                return Single.from(future);
-            });
+            .zipWith(observableFileSystem.load(id), Tuple2::apply);
     }
 
     Single<FileMetadata> upload(UUID id, String name, File file, MimeType mimeType) {
@@ -69,6 +44,7 @@ public class FileTransporter {
                 new OpenOptions().setRead(true))
         .flatMap(AsyncFile::toObservable)
         .reduce(Buffer.buffer(), (reduced, buffer) -> {
+            // FIXME consumes too much memory
             return reduced.appendBuffer(buffer);
         })
         .toSingle()

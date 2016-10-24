@@ -1,5 +1,6 @@
 package jp.skypencil.brownie.fs;
 
+import java.io.File;
 import java.util.UUID;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -8,7 +9,6 @@ import io.vertx.rxjava.core.buffer.Buffer;
 import jp.skypencil.brownie.FileId;
 import jp.skypencil.brownie.FileMetadata;
 import jp.skypencil.brownie.FileTransporter;
-import rx.Observable;
 import rx.Single;
 
 /**
@@ -23,7 +23,7 @@ public interface SharedFileSystem {
      * @param id
      *      ID of file to load
      */
-    Observable<Buffer> load(UUID id);
+    Single<File> load(UUID id);
 
     /**
      * Store a file to shared file system. This operation fails if target file already exists.

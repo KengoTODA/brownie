@@ -70,7 +70,7 @@ class FileStorageServer extends AbstractVerticle {
     private String registration;
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Future<Void> startFuture) {
         log.info("Initializing FrontStorageServer...");
 
         Router router = createRouter();
@@ -110,7 +110,7 @@ class FileStorageServer extends AbstractVerticle {
         router.get("/file/").handler(this::listFile);
         router.get("/file/:fileId").handler(this::getFile).failureHandler(this::judgeStatusCode);
         router.head("/file/:fileId").handler(this::headFile).failureHandler(this::judgeStatusCode);
-        router.post("/file").handler(this::postFile);
+        router.post("/file/").handler(this::postFile);
         router.delete("/file/:fileId").handler(this::deleteFile).failureHandler(this::judgeStatusCode);
         return router;
     }
@@ -151,12 +151,15 @@ class FileStorageServer extends AbstractVerticle {
         fileTransporter
             .download(UUID.fromString(fileId))
             .subscribe(tuple -> {
-                String filePath = tuple._2.getAbsolutePath();
-                response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), tuple._1.getMimeType().toString());
-                response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(tuple._1.getGenerated()));
-                response.putHeader("File-Id", tuple._1.getFileId().toString());
-                response.putHeader("File-Name", tuple._1.getName());
-                response.sendFile(filePath); // CONTENT_LENGTH will be put by vert.x
+                FileMetadata metadata = tuple._1;
+                File file = tuple._2;
+                response
+                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), metadata.getMimeType().toString())
+                    .putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(metadata.getGenerated()))
+                    .putHeader("File-Id", metadata.getFileId().toString())
+                    .putHeader("File-Name", metadata.getName())
+                    .exceptionHandler(ctx::fail)
+                    .sendFile(file.getAbsolutePath());
             }, ctx::fail);
     }
 
@@ -170,7 +173,6 @@ class FileStorageServer extends AbstractVerticle {
             .subscribe(tuple -> {
                 response.putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json"); // type of THIS response, not file
                 response.putHeader(HttpHeaders.LAST_MODIFIED.toString(), INSTANT_FORMATTER.format(tuple._1.getGenerated()));
-                response.putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(tuple._1.getContentLength()));
                 response.putHeader("File-Id", tuple._1.getFileId().toString());
                 response.putHeader("File-Name", tuple._1.getName());
                 response.end();

@@ -20,16 +20,20 @@ import org.junit.runner.RunWith;
 
 import com.google.common.io.Files;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
+import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
@@ -49,7 +53,7 @@ public class FileStorageServerTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Before
-    public void setUp(TestContext context) throws Exception {
+    public void setUp(TestContext context) {
         vertx = Vertx.vertx();
         fileTransporter = mock(FileTransporter.class);
         server = new FileStorageServer(vertx, fileTransporter, new IdGenerator(), ServiceDiscovery.create(vertx));
@@ -58,22 +62,20 @@ public class FileStorageServerTest {
         doReturn(new JsonObject().put("BROWNIE_CLUSTER_HTTP_PORT", HTTP_PORT)).when(ctx).config();
 
         server.init((io.vertx.core.Vertx) vertx.getDelegate(), ctx);
-        Async async = context.async();
         Future<Void> future = Future.future();
-        future.setHandler(ar -> {
-            if (ar.failed()) {
-                context.fail(ar.cause());
-            } else {
-                async.complete();
-            }
-        });
+        future.setHandler(context.asyncAssertSuccess());
         server.start(future);
     }
 
     @After
-    public void cleanUp(TestContext context) throws Exception {
-        server.stop();
-        vertx.close(context.asyncAssertSuccess());
+    public void cleanUp(TestContext context) {
+        Future<Void> stopped = Future.future();
+        Handler<AsyncResult<Void>> handler = context.asyncAssertSuccess();
+        stopped.setHandler(ar -> {
+            context.assertFalse(ar.failed());
+            vertx.close(handler);
+        });
+        server.stop(stopped);
     }
 
     @Test
@@ -95,32 +97,42 @@ public class FileStorageServerTest {
 
     @Test
     public void testGet(TestContext context) throws IOException {
-        Async async = context.async();
-        UUID fileId = UUID.randomUUID();
-        File file = folder.newFile();
-        Files.write("file", file, StandardCharsets.UTF_8);
-
-        FileMetadata metadata = new FileMetadata(fileId, "name", MimeType.valueOf("text/plain"), 4, Instant.parse("2007-12-03T10:15:30.00Z"));
-        doReturn(Single.just(Tuple2.apply(metadata, file))).when(fileTransporter).download(fileId);
-
-        HttpClientRequest req = vertx.createHttpClient().get(HTTP_PORT, "localhost", "/file/" + fileId);
-        req.toObservable()
-                .map(res -> {
-                    context.assertEquals(
-                            "Mon, 03 12 2007 10:15:30 GMT",
-                            res.getHeader(HttpHeaders.LAST_MODIFIED.toString()));
-                    return res;
-                })
-                .flatMap(HttpClientResponse::toObservable)
-                .reduce(Buffer.buffer(), Buffer::appendBuffer)
-                .toSingle()
-                .subscribe(buffer -> {
-                    context.assertEquals("file", buffer.toString());
-                    async.complete();
-                }, context::fail);
-        req.end();
+        testGetInternal(context, "1KiB.dat", 1024);
     }
 
+    @Test
+    public void testGet1MiB(TestContext context) throws IOException {
+        testGetInternal(context, "1MiB.dat", 1024 * 1024);
+    }
+
+    private void testGetInternal(TestContext context, String fileName, int fileSize) throws IOException {
+        Async async = context.async();
+        UUID fileId = UUID.randomUUID();
+        File file = new File("src/test/resources/", fileName);
+
+        FileMetadata metadata = new FileMetadata(fileId, fileName, MimeType.valueOf("application/octet-stream"),
+                fileSize, Instant.parse("2007-12-03T10:15:30.00Z"));
+        doReturn(Single.just(Tuple2.apply(metadata, file))).when(fileTransporter).download(fileId);
+
+        HttpClient client = vertx.createHttpClient();
+        RxHelper.get(client, HTTP_PORT, "localhost", "/file/" + fileId)
+            .flatMap(res -> {
+                context.assertEquals(
+                        Integer.toString(fileSize),
+                        res.getHeader(HttpHeaders.CONTENT_LENGTH.toString()));
+                context.assertEquals(
+                        "Mon, 03 12 2007 10:15:30 GMT",
+                        res.getHeader(HttpHeaders.LAST_MODIFIED.toString()));
+                return res.toObservable();
+            }).reduce(0, (size, buffer) -> {
+                return size + buffer.length();
+            }).subscribe(downloadedBytes -> {
+                context.assertEquals(fileSize, downloadedBytes.intValue());
+            }, context::fail, () -> {
+                client.close();
+                async.complete();
+            });
+    }
     @Test
     public void testGetNotExistFile(TestContext context) throws IOException {
         Async async = context.async();
