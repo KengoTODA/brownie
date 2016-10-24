@@ -24,7 +24,7 @@ public class BrownieModuleTest {
     @Before
     public void setUp() {
         vertx = Vertx.vertx();
-        module = new BrownieModule(vertx, mock(AsyncSQLClient.class), "/tmp", mock(ServiceDiscovery.class));
+        module = new BrownieModule(vertx, mock(AsyncSQLClient.class), mock(ServiceDiscovery.class));
     }
 
     @After

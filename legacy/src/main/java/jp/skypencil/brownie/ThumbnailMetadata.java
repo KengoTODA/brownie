@@ -15,7 +15,7 @@ public class ThumbnailMetadata {
     UUID id;
 
     @Nonnull
-    @FileId
+    // @FileId
     UUID videoId;
 
     @Nonnull

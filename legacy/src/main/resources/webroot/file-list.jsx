@@ -14,20 +14,20 @@ function numberWithCommas(x) {
 
 class File extends React.Component {
   deleteFile() {
-    $.ajax('files/' + this.props.fileId, {
+    $.ajax('files/' + this.props.id, {
       type: 'delete',
       cache: false
     });
   }
 
   render() {
-    let url = 'files/' + this.props.fileId;
-    let contentLength = numberWithCommas(this.props.contentLength) + ' bytes';
+    let url = 'files/' + this.props.id;
+    let contentLength = numberWithCommas(this.props.content_length) + ' bytes';
     let generated = new Date(this.props.generated) + '';
     return (
       <tr>
         <td>
-          <a href={url}>{this.props.fileName}</a>
+          <a href={url}>{this.props.name}</a>
           <i className="deleteBtn" onClick={this.deleteFile.bind(this)}>&times;</i>
         </td>
         <td className="contentLength">{contentLength}</td>
@@ -60,10 +60,10 @@ class FileList extends React.Component {
       let fileNodes = this.state.files.map(function(file) {
         return (
           <File
-              key={file.fileId}
-              fileId={file.fileId}
-              fileName={file.fileName}
-              contentLength={file.contentLength}
+              key={file.id}
+              id={file.id}
+              name={file.name}
+              content_length={file.content_length}
               generated={file.generated}>
           </File>
         );

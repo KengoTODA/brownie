@@ -81,7 +81,7 @@ public class VideoUploadedEventRegistryOnPostgresTest {
     private JsonObject createConfig() {
         return new JsonObject()
                 .put("host", System.getProperty("db.host", "localhost"))
-                .put("port", Integer.parseInt(System.getProperty("db.port", "5432")))
+                .put("port", Integer.parseInt(System.getProperty("db.port", "15432")))
                 .put("username", "brownie")
                 .put("password", "brownie")
                 .put("database", "brownie");

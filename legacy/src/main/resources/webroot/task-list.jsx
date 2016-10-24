@@ -38,7 +38,7 @@ class TaskList extends React.Component {
       var taskNodes = this.state.tasks.map(function(task) {
         return (
           <Task
-              key={task.key}
+              key={task.id}
               fileName={task.fileName}
               registered={task.registered}>
           </Task>

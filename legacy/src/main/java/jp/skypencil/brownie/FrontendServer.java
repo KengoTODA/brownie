@@ -12,14 +12,18 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
+import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
+import io.vertx.rxjava.core.Future;
+import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
 import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.core.http.HttpServerResponse;
+import io.vertx.rxjava.core.streams.Pump;
 import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
@@ -27,7 +31,6 @@ import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
-import jp.skypencil.brownie.registry.FileMetadataRegistry;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 import lombok.AccessLevel;
@@ -60,11 +63,7 @@ public class FrontendServer extends AbstractVerticle {
 
     private final VideoUploadedEventRegistry observableTaskRegistry;
 
-    private final FileMetadataRegistry observableFileMetadataRegistry;
-
     private final ThumbnailMetadataRegistry thumbnailMetadataRegistry;
-
-    private final IdGenerator idGenerator;
 
     private final ServiceDiscovery discovery;
 
@@ -113,28 +112,39 @@ public class FrontendServer extends AbstractVerticle {
             return;
         }
         Observable.from(uploadedFiles).flatMap(fileUpload -> {
-            VideoUploadedEvent task = new VideoUploadedEvent(idGenerator.generateUuidV1(), fileUpload.fileName(), Collections.singleton("vga"));
             File file = new File(fileUpload.uploadedFileName());
             MimeType mimeType = MimeType.valueOf(fileUpload.contentType());
-            return createHttpClientForFileStorage()
+            Future<Void> closed = Future.future();
+            return createHttpClientForFileStorage(closed)
                 .flatMap(client -> {
                     HttpClientRequest req = client.post("/file/")
+                            .setChunked(true)
+                            .putHeader("Content-Length", Long.toString(fileUpload.size()))
                             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), mimeType.toString())
                             .putHeader("File-Name", fileUpload.fileName());
-                    vertx.fileSystem().readFileObservable(file.getAbsolutePath())
-                        .subscribe(req::write, ctx::fail, req::end);
-                    return req.toObservable().toSingle();
+                    Single<HttpClientResponse> result = req.toObservable().toSingle();
+                    vertx.fileSystem().openObservable(file.getAbsolutePath(), new OpenOptions().setRead(true).setCreateNew(false))
+                        .subscribe(asyncFile -> {
+                            asyncFile.endHandler(v -> {
+                                req.end();
+                            });
+                            Pump.pump(asyncFile, req).start();
+                        });
+                    return result;
                 })
                 .flatMap(res -> {
                     if (res.statusCode() != 200) {
                         throw new RuntimeException("Failed to store uploaded video to file storage. Status code is: " + res.statusCode() + ", status message is: " + res.statusMessage());
                     }
-                    return observableTaskRegistry.store(task);
+                    UUID fileId = UUID.fromString(res.getHeader("File-Id"));
+                    VideoUploadedEvent event = new VideoUploadedEvent(fileId, fileUpload.fileName(), Collections.singleton("vga"));
+                    return observableTaskRegistry.store(event);
+                })
+                .doOnSuccess(event -> {
+                    vertx.eventBus().send("file-uploaded", event);
                 })
                 .toObservable()
-                .doOnCompleted(() -> {
-                    vertx.eventBus().send("file-uploaded", task);
-                });
+                .doOnCompleted(closed::complete);
         }).subscribe(v -> {}, error -> {
             log.warn("Failed to store task to registry", error);
             ctx.fail(error);
@@ -158,8 +168,8 @@ public class FrontendServer extends AbstractVerticle {
                 }, error -> {
                     log.warn("Failed to load tasks", error);
                     response
-                    .setStatusCode(500)
-                    .end("Failed to load tasks");
+                        .setStatusCode(500)
+                        .end("Failed to load tasks");
                 }, () -> {
                     response.end(responseBody.append("]").toString());
                 });
@@ -190,7 +200,8 @@ public class FrontendServer extends AbstractVerticle {
     private void downloadThumbnail(RoutingContext ctx) {
         UUID videoId = UUID.fromString(ctx.request().getParam("videoId"));
         HttpServerResponse response = ctx.response();
-        Single<HttpClient> clientSingle = createHttpClientForFileStorage();
+        Future<Void> closed = Future.future();
+        Single<HttpClient> clientSingle = createHttpClientForFileStorage(closed);
         Single<UUID> thumbnailIdSingle = findThumbnailFileIdFor(videoId);
         Single.zip(clientSingle, thumbnailIdSingle, (client, thumbnailId) -> {
             return client.get("/file/" + thumbnailId);
@@ -202,17 +213,30 @@ public class FrontendServer extends AbstractVerticle {
             clientReq.end();
             return result;
         })
+        .doAfterTerminate(closed::complete)
         .subscribe(response::write, ctx::fail, response::end);
     }
 
-    private Single<HttpClient> createHttpClientForFileStorage() {
+    /**
+     * A helper method to generates {@link HttpClient} to connect to file storage service with help from service discovery.
+     * Caller should provide a {@link Future} and 
+     * @param closed
+     *      Caller should invoke {@link Future#complete()} on this instance when it finishes using created
+     *      {@link HttpClient}, then this method will release reference from service discovery.
+     * @return A {@link Single} which emits created {@link HttpClient}. Non-null.
+     */
+    @Nonnull
+    private Single<HttpClient> createHttpClientForFileStorage(Future<Void> closed) {
         Single<HttpClient> clientSingle = discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
             .map(discovery::getReference)
             .flatMap(reference -> {
-                HttpClient client = reference.get();
-                return Observable.just(client)
-                        .doAfterTerminate(client::close)
-                        .doAfterTerminate(reference::release);
+                HttpClient client = new HttpClient(reference.get());
+                closed.setHandler(ar -> {
+                    // this will invoke HttpEndpointReference#close() which closes HttpClient,
+                    // so we do not have to call client.close() explicitly.
+                    reference.release();
+                });
+                return Observable.just(client);
             })
             .toSingle();
         return clientSingle;
@@ -226,13 +250,15 @@ public class FrontendServer extends AbstractVerticle {
 
     private void deleteFile(RoutingContext ctx, String fileId) {
         io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
-        createHttpClientForFileStorage()
+        Future<Void> closed = Future.future();
+        createHttpClientForFileStorage(closed)
         .flatMap(client -> {
             HttpClientRequest req = client.delete("/file/" + fileId);
             Observable<HttpClientResponse> result = req.toObservable();
             req.end();
             return result.toSingle();
         })
+        .doAfterTerminate(closed::complete)
         .subscribe(clientRes -> {
             if (clientRes.statusCode() != 200) {
                 throw new RuntimeException("Failed to delete file in file storage. Status code is: " + clientRes.statusCode() + ", status message is: " + clientRes.statusMessage());
@@ -242,40 +268,45 @@ public class FrontendServer extends AbstractVerticle {
     }
 
     private void downloadFile(RoutingContext ctx, String fileId) {
-        UUID id = UUID.fromString(fileId);
-        io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response();
-        observableFileMetadataRegistry.load(id).subscribe(metadata -> {
-            long contentLength = metadata.getContentLength();
-            response.putHeader("Content-Length", Long.toString(contentLength));
-            createHttpClientForFileStorage().flatMap(client -> {
-                HttpClientRequest clientReq = client.get("/file/" + fileId);
-                Single<HttpClientResponse> result = clientReq.toObservable().toSingle();
-                clientReq.end();
-                return result;
-            })
-            .toObservable()
-            .flatMap(HttpClientResponse::toObservable)
-            .subscribe(response::write, ctx::fail, response::end);
-        });
+        io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response().setChunked(true);
+        Future<Void> closed = Future.future();
+        createHttpClientForFileStorage(closed).flatMap(client -> {
+            return RxHelper.get(client, "/file/" + fileId).toSingle();
+        })
+        .map(clientRes -> {
+            response
+                .putHeader("File-Id", clientRes.getHeader("File-Id"))
+                .putHeader("File-Name", clientRes.getHeader("File-Name"))
+                .putHeader("Last-Modified", clientRes.getHeader("Last-Modified"))
+                .putHeader("Content-Length", clientRes.getHeader("Content-Length"))
+                .putHeader("Content-Type", clientRes.getHeader("Content-Type"));
+            return clientRes;
+        })
+        .map(clientRes -> {
+            clientRes.exceptionHandler(ctx::fail).endHandler(v -> {
+                closed.complete(v);
+                response.end();
+            });
+            return Pump.pump(clientRes, response);
+        })
+        .subscribe(Pump::start);
     }
 
     private void generateFileList(RoutingContext ctx) {
          io.vertx.rxjava.core.http.HttpServerResponse response = ctx.response()
             .setChunked(true)
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
-        StringBuilder responseBody = new StringBuilder("[");
-        observableFileMetadataRegistry.iterate().subscribe(metadata -> {
-            if (responseBody.length() != 1) {
-                responseBody.append(",");
-            }
-            responseBody.append(metadata.toJson());
-        }, error -> {
-            log.error("Failed to load files", error);
-            response
-                .setStatusCode(500)
-                .end("Failed to load files");
-        }, () -> {
-            response.end(responseBody.append("]").toString());
-        });
+         Future<Void> closed = Future.future();
+         createHttpClientForFileStorage(closed)
+             .flatMap(client -> {
+                 return RxHelper.get(client, "/file/").toSingle();
+             })
+             .subscribe(clientRes -> {
+                 clientRes.exceptionHandler(ctx::fail).endHandler(v -> {
+                     closed.complete(v);
+                     response.end();
+                 });
+                 Pump.pump(clientRes, response).start();
+             }, ctx::fail);
     }
 }

@@ -1,17 +1,12 @@
 package jp.skypencil.brownie;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
@@ -22,16 +17,11 @@ import org.junit.runner.RunWith;
 
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
-import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.http.HttpServerResponse;
-import io.vertx.rxjava.ext.web.FileUpload;
 import io.vertx.rxjava.ext.web.RoutingContext;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
-import jp.skypencil.brownie.registry.FileMetadataRegistry;
-import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
-import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 
 @RunWith(VertxUnitRunner.class)
 public class FrontendServerTest {
@@ -55,7 +45,7 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithNoUploadedFile(TestContext context) {
-        FrontendServer server = new FrontendServer(null, null, null, new IdGenerator(), ServiceDiscovery.create(vertx));
+        FrontendServer server = new FrontendServer(null, null, ServiceDiscovery.create(vertx));
 
         HttpServerResponse response = mock(HttpServerResponse.class);
         RoutingContext ctx = mock(RoutingContext.class);

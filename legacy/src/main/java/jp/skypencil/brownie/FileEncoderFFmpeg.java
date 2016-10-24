@@ -35,6 +35,7 @@ public class FileEncoderFFmpeg implements FileEncoder {
 
     private Handler<Future<File>> convert(File targetFile,
             String resolution, final int processors) {
+        log.info("Target file size is {}", targetFile.length());
         return future -> {
             log.info("Converting {} to {}", targetFile, resolution);
             String resultFileName = targetFile.getAbsolutePath() + "-" + resolution + ".webm";
@@ -50,6 +51,7 @@ public class FileEncoderFFmpeg implements FileEncoder {
                     resultFileName);
             builder.redirectError();
             builder.redirectOutput();
+            log.info("Executing command: {}", builder.command());
             try {
                 Process process = builder.start();
                 int statusCode;

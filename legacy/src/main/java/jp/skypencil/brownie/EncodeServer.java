@@ -10,9 +10,11 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
+import io.vertx.core.Future;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
+import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
@@ -20,12 +22,15 @@ import io.vertx.rxjava.core.file.AsyncFile;
 import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
+import io.vertx.rxjava.core.streams.Pump;
+import io.vertx.rxjava.core.streams.ReadStream;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
 import rx.Single;
+import scala.Tuple2;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
@@ -57,54 +62,63 @@ public class EncodeServer extends AbstractVerticle {
     private Single<File> saveFileToLocal(UUID fileId) {
         UUID localFileId = idGenerator.generateUuidV1();
         File localFile = new File(directory, localFileId.toString());
-        return vertx.fileSystem()
+        Future<Void> httpClosed = Future.future();
+        Single<ReadStream<Buffer>> read = downloadFileFromFileStorage(fileId, httpClosed);
+        Single<AsyncFile> write = vertx.fileSystem()
             .openObservable(localFile.getAbsolutePath(), new OpenOptions().setCreateNew(true))
-            .toSingle()
-            .flatMap(asyncFile -> {
-                return downloadFileFromFileStorage(fileId)
-                    .reduce(asyncFile, (v, buffer) -> {
-                        return asyncFile.write(buffer);
-                    })
-                    .toSingle()
-                    .doAfterTerminate(asyncFile::close);
-            })
-            .map(asyncFile -> {
-                return localFile;
-            });
-        
+            .toSingle();
+
+        return Single.create(subscriber -> {
+            read.zipWith(write, (readStream, writeStream) -> {
+                readStream.exceptionHandler(subscriber::onError);
+                writeStream.exceptionHandler(subscriber::onError);
+                readStream.endHandler(v -> {
+                    httpClosed.complete(v);
+                    writeStream.close(closed -> {
+                        log.info("Saved data to local file. Its size is {}", localFile.length());
+                        subscriber.onSuccess(localFile);
+                    });
+                });
+                return Pump.pump(readStream, writeStream).start();
+            }).subscribe(v -> {}, subscriber::onError);
+        });
     }
 
-    private Observable<Buffer> downloadFileFromFileStorage(UUID videoId) {
-        return createHttpClientForFileStorage()
-                .toObservable()
+    private Single<ReadStream<Buffer>> downloadFileFromFileStorage(UUID videoId, Future<Void> closed) {
+        return createHttpClientForFileStorage(closed)
                 .flatMap(client -> {
-                    HttpClientRequest req = client.get("/file/" + videoId);
-                    Observable<HttpClientResponse> result = req.toObservable();
-                    req.end();
-                    return result;
+                    // FIXME id might be invalid
+                    return RxHelper.get(client, "/file/" + videoId).toSingle();
                 })
-                .flatMap(HttpClientResponse::toObservable);
+                .map(clientRes -> {
+                    if (clientRes.statusCode() != 200) {
+                        closed.complete();
+                        throw new RuntimeException("Status code is not 200 but " + clientRes.statusCode());
+                    }
+                    return clientRes;
+                });
     }
 
     private void registerEventListeners() {
         MessageConsumer<VideoUploadedEvent> consumer = vertx.eventBus().localConsumer("file-uploaded");
-        consumer.toObservable().subscribe(message -> {
-            VideoUploadedEvent task = message.body();
-            saveFileToLocal(task.getId()).doOnSuccess(downloadedFile -> {
-                log.debug("Downloaded file (id: {}) to {}",
-                        task.getId(),
-                        downloadedFile);
-            }).doOnError(error -> {
-                log.error("Failed to download file (id: {}) from distributed file system", task.getId(), error);
-                message.fail(1, "Failed to download file from distributed file system");
-            }).toObservable().flatMap(downloadedFile -> {
-                return Observable.from(task.getResolutions()).flatMap(resolution -> {
-                    return convert(downloadedFile, resolution, message).toObservable();
-                });
-            }).flatMap(convertedFile -> {
-                return upload(convertedFile, task.getUploadedFileName(), message).toObservable();
-            }).subscribe();
-        });
+        consumer.toObservable().flatMap(message -> {
+            VideoUploadedEvent event = message.body();
+            return (Observable<Tuple2<File, Message<VideoUploadedEvent>>>)
+                    saveFileToLocal(event.getId()).zipWith(Single.just(message), Tuple2::apply).toObservable();
+        }).flatMap(tuple -> {
+            File downloadedFile = tuple._1;
+            Message<VideoUploadedEvent> message = tuple._2;
+            VideoUploadedEvent event = message.body();
+            return (Observable<Tuple2<File, Message<VideoUploadedEvent>>>) Observable.from(event.getResolutions()).flatMap(resolution -> {
+                return convert(downloadedFile, resolution, message).toObservable();
+            }).zipWith(Observable.just(message).repeat(), Tuple2::apply);
+        }).flatMap(tuple -> {
+            File convertedFile = tuple._1;
+            Message<VideoUploadedEvent> message = tuple._2;
+            VideoUploadedEvent event = message.body();
+            log.info("Conversion finished, now we are going to upload video file");
+            return upload(convertedFile, event.getUploadedFileName(), message).toObservable();
+        }).subscribe();
     }
 
     private Single<File> convert(File source, String resolution, Message<VideoUploadedEvent> message) {
@@ -127,11 +141,15 @@ public class EncodeServer extends AbstractVerticle {
 
     private Single<Void> upload(File source, String fileName,
             Message<VideoUploadedEvent> message) {
-        UUID id = idGenerator.generateUuidV1(); 
-        return createHttpClientForFileStorage()
+        UUID videoId = message.body().getId();
+        Future<Void> closed = Future.future();
+        return createHttpClientForFileStorage(closed)
             .flatMap(client -> {
                 HttpClientRequest req = client.post("/file/")
-                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "video/mpeg");
+                    .setChunked(true)
+                    .putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(source.length()))
+                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "video/webm")
+                    .putHeader("File-Name", message.body().getUploadedFileName());
                 Single<HttpClientResponse> result = req.toObservable().toSingle();
                 return Single.zip(result, writeTo(req, source), (res, v) -> {
                     return (HttpClientResponse) res;
@@ -147,34 +165,39 @@ public class EncodeServer extends AbstractVerticle {
                             + res.statusMessage());
                 }
                 log.info("Uploaded file ({})", source.getAbsolutePath());
-                vertx.eventBus().send("generate-thumbnail", id);
+                vertx.eventBus().send("generate-thumbnail", videoId);
                 return (Void) null;
-            });
+            })
+            .doAfterTerminate(closed::complete);
     }
 
     private Single<Void> writeTo(HttpClientRequest req, File source) {
         return vertx.fileSystem()
-            .openObservable(source.getAbsolutePath(),
-                    new OpenOptions().setCreate(false).setWrite(false).setRead(true))
-            .flatMap(AsyncFile::toObservable)
-            .collect(() -> req, HttpClientRequest::write)
-            .toSingle()
-            .map(client -> {
-                client.end();
-                return null;
-            });
+                .openObservable(source.getAbsolutePath(),
+                        new OpenOptions().setCreate(false).setWrite(false).setRead(true))
+                .toSingle()
+                .flatMap(readStream -> {
+                    return Single.create(subscriber -> {
+                        req.exceptionHandler(subscriber::onError);
+                        readStream.exceptionHandler(subscriber::onError).endHandler(v -> {
+                            req.end();
+                            subscriber.onSuccess(v);
+                        });
+                        Pump.pump(readStream, req).start();
+                    });
+                });
     }
 
-    private Single<HttpClient> createHttpClientForFileStorage() {
-        Single<HttpClient> clientSingle = discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
+    private Single<HttpClient> createHttpClientForFileStorage(Future<Void> closed) {
+        return discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
             .map(discovery::getReference)
             .flatMap(reference -> {
-                HttpClient client = reference.get();
-                return Observable.just(client)
-                        .doAfterTerminate(client::close)
-                        .doAfterTerminate(reference::release);
+                HttpClient client = new HttpClient(reference.get());
+                closed.setHandler(ar -> {
+                    reference.release();
+                });
+                return Observable.just(client);
             })
             .toSingle();
-        return clientSingle;
     }
 }

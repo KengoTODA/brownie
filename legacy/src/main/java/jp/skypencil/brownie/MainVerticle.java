@@ -57,9 +57,6 @@ public class MainVerticle extends AbstractVerticle {
         log.info("Creating PostgreSQLClient", postgresConfig);
         sqlClient = PostgreSQLClient.createShared(vertx, postgresConfig);
 
-        String mountedDir = config().getString("BROWNIE_MOUNTED_DIR", System.getProperty("java.io.tmpdir", "/tmp"));
-        log.info("Initializing module to use {} as temporal directory", mountedDir);
-
         discovery = ServiceDiscovery.create(vertx)
                 .registerServiceImporter(new ServiceImporter(new ConsulServiceImporter()), new JsonObject()
                     .put("host", config().getString("BROWNIE_CONSUL_HOST", "localhost"))
@@ -67,7 +64,7 @@ public class MainVerticle extends AbstractVerticle {
                     .put("scan-period", 2000));
 
 
-        Injector injector = Guice.createInjector(new BrownieModule(vertx, sqlClient, mountedDir, discovery));
+        Injector injector = Guice.createInjector(new BrownieModule(vertx, sqlClient, discovery));
         return injector;
     }
 

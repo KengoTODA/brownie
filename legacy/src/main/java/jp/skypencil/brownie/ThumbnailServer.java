@@ -13,13 +13,15 @@ import javax.inject.Inject;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
-import io.vertx.rxjava.core.buffer.Buffer;
+import io.vertx.rxjava.core.Future;
+import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import io.vertx.rxjava.core.file.AsyncFile;
 import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
+import io.vertx.rxjava.core.streams.Pump;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import lombok.RequiredArgsConstructor;
@@ -57,36 +59,39 @@ public class ThumbnailServer extends AbstractVerticle {
         }
     }
 
-    private Observable<Buffer> downloadVideoFromFileStorage(UUID videoId) {
-        return createHttpClientForFileStorage()
-                .toObservable()
+    private Single<HttpClientResponse> downloadVideoFromFileStorage(UUID videoId, Future<Void> closed) {
+        return createHttpClientForFileStorage(closed)
                 .flatMap(client -> {
-                    HttpClientRequest req = client.get("/file/" + videoId);
-                    Observable<HttpClientResponse> result = req.toObservable();
-                    req.end();
-                    return result;
-                })
-                .flatMap(HttpClientResponse::toObservable);
+                    return RxHelper.get(client, "/file/" + videoId).toSingle();
+                });
     }
 
     private Single<File> saveVideoToLocal(UUID videoId) {
         UUID localFileId = idGenerator.generateUuidV1();
         File localFile = new File(directory, localFileId.toString());
-        return vertx.fileSystem()
+        Future<Void> closed = Future.future();
+        Single<File> result = vertx.fileSystem()
             .openObservable(localFile.getAbsolutePath(), new OpenOptions().setCreateNew(true))
             .toSingle()
-            .flatMap(asyncFile -> {
-                return downloadVideoFromFileStorage(videoId)
-                    .reduce(asyncFile, (v, buffer) -> {
-                        return asyncFile.write(buffer);
-                    })
-                    .toSingle()
-                    .doAfterTerminate(asyncFile::close);
-            })
-            .map(asyncFile -> {
-                return localFile;
+            .zipWith(downloadVideoFromFileStorage(videoId, closed), Tuple2::apply)
+            .flatMap(tuple -> {
+                AsyncFile asyncFile = tuple._1;
+                HttpClientResponse readStream = tuple._2;
+                return Single.create(subscriber -> {
+                    asyncFile.exceptionHandler(subscriber::onError);
+                    readStream.exceptionHandler(subscriber::onError).endHandler(v -> {
+                        closed.complete(v);
+                        asyncFile.close(ar -> {
+                            if (ar.failed()) {
+                                throw new RuntimeException("Failed to close file", ar.cause());
+                            }
+                            subscriber.onSuccess(localFile);
+                        });
+                    });
+                    Pump.pump(readStream, asyncFile).start();
+                });
             });
-        
+        return result.doAfterTerminate(closed::complete);
     }
 
     private void registerEventListeners() {
@@ -122,19 +127,24 @@ public class ThumbnailServer extends AbstractVerticle {
 
     Single<ThumbnailMetadata> upload(Tuple2<File, ThumbnailMetadata> tuple) {
         ThumbnailMetadata metadata = tuple._2();
-        return createHttpClientForFileStorage()
+        Future<Void> closed = Future.future();
+        return createHttpClientForFileStorage(closed)
             .flatMap(client -> {
                 HttpClientRequest req = client.post("/file/")
+                    .setChunked(true)
                     .putHeader("File-Name", "Thumbnail.jpg")
                     .putHeader(HttpHeaders.CONTENT_LENGTH.toString(), Long.toString(tuple._2.getContentLength()))
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), tuple._2.getMimeType().toString());
-                Observable<HttpClientResponse> result = req.toObservable();
                 vertx.fileSystem().openObservable(tuple._1.getAbsolutePath(), new OpenOptions().setCreate(false))
-                    .flatMap(AsyncFile::toObservable)
-                    .subscribe(req::write, error -> {
+                    .subscribe(asyncFile -> {
+                        asyncFile.endHandler(v -> {
+                            req.end();
+                        });
+                        Pump.pump(asyncFile, req).start();
+                    }, error -> {
                         throw new RuntimeException("Failed to load data from local video file", error);
-                    }, req::end);
-                return result.toSingle();
+                    });
+                return req.toObservable().toSingle();
             })
             .map(res -> {
                 if (res.statusCode() != 200) {
@@ -142,17 +152,19 @@ public class ThumbnailServer extends AbstractVerticle {
                             + ", status message is: " + res.statusMessage());
                 }
                 return metadata;
-            });
+            })
+            .doAfterTerminate(closed::complete);
     }
 
-    private Single<HttpClient> createHttpClientForFileStorage() {
+    private Single<HttpClient> createHttpClientForFileStorage(Future<Void> closed) {
         Single<HttpClient> clientSingle = discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
             .map(discovery::getReference)
             .flatMap(reference -> {
-                HttpClient client = reference.get();
-                return Observable.just(client)
-                        .doAfterTerminate(client::close)
-                        .doAfterTerminate(reference::release);
+                HttpClient client = new HttpClient(reference.get());
+                closed.setHandler(v -> {
+                    reference.release();
+                });
+                return Observable.just(client);
             })
             .toSingle();
         return clientSingle;
