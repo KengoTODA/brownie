@@ -8,12 +8,13 @@ install:
   - pushd legacy && npm install && popd
   - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 before_script:
-  - docker run -d -p 15432:5432 -v "$(pwd)/legacy/src/main/sql:/docker-entrypoint-initdb.d" --name postgres -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
-  - docker run -d -p 25432:5432 -v "$(pwd)/file-storage/src/main/sql:/docker-entrypoint-initdb.d" --name postgres -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
+  - docker run -d -p 15432:5432 -v "$(pwd)/legacy/src/main/sql:/docker-entrypoint-initdb.d" --name postgres-legacy -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
+  - docker run -d -p 25432:5432 -v "$(pwd)/file-storage/src/main/sql:/docker-entrypoint-initdb.d" --name postgres-file-storage -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
 script:
   - mvn clean verify
 after_script:
-  - docker stop postgres
+  - docker stop postgres-legacy
+  - docker stop postgres-file-storage
 after_success:
   - mvn jacoco:report-aggregate coveralls:report -pl test-aggregator
 notifications:
