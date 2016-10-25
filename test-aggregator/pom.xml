@@ -78,7 +78,7 @@
               <sourceDirectories>
                 <sourceDirectory>${project.basedir}/../common/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../file-storage/src/main/java</sourceDirectory>
-                <sourceDirectory>${project.basedir}/../thumbnail-generator/src/main/java</sourceDirectory>
+                <sourceDirectory>${project.basedir}/../thumbnail/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../legacy/src/main/java</sourceDirectory>
               </sourceDirectories>
             </configuration>
