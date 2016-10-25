@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public final class BrownieFileNotFoundException extends RuntimeException {
     private static final long serialVersionUID = -4052854724854084774L;
 
