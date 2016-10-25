@@ -15,8 +15,6 @@ script:
 after_script:
   - docker stop postgres-legacy
   - docker stop postgres-file-storage
-after_success:
-  - mvn jacoco:report-aggregate coveralls:report -pl test-aggregator
 notifications:
   email:
     recipients:

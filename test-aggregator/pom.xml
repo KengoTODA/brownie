@@ -12,6 +12,14 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-aggregator</artifactId>
   <name>Test Aggregator</name>
+  <description>
+    A module to aggregate reports from other modules.
+    https://github.com/jacoco/jacoco/wiki/MavenMultiModule#strategy-module-with-dependencies
+  </description>
+
+  <properties>
+    <coveralls.skip>true</coveralls.skip>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -33,13 +41,59 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <!-- Necessary to avoid ArrayIndexOutOfBoundsException -->
-            <exclude>jp/skypencil/brownie/registry/FileMetadataRegistryOnPostgres.class</exclude>
-          </excludes>
-        </configuration>
+        <executions>
+          <execution>
+            <id>report-coverage</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report-aggregate</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <!-- Necessary to avoid ArrayIndexOutOfBoundsException -->
+                <exclude>jp/skypencil/brownie/registry/FileMetadataRegistryOnPostgres.class</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.eluder.coveralls</groupId>
+        <artifactId>coveralls-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>submit-coverage-to-coveralls</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <configuration>
+              <jacocoReports>
+                <jacocoReport>${project.build.directory}/site/jacoco-aggregate/jacoco.xml</jacocoReport>
+              </jacocoReports>
+              <sourceDirectories>
+                <sourceDirectory>${project.basedir}/../common/src/main/java</sourceDirectory>
+                <sourceDirectory>${project.basedir}/../file-storage/src/main/java</sourceDirectory>
+                <sourceDirectory>${project.basedir}/../legacy/src/main/java</sourceDirectory>
+              </sourceDirectories>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>ci</id>
+      <activation>
+        <property>
+          <name>env.TRAVIS</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <coveralls.skip>false</coveralls.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>
