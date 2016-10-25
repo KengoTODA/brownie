@@ -1,6 +1,5 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.thumbnail;
 
-import java.util.Set;
 import java.util.UUID;
 
 import com.google.inject.Guice;
@@ -10,45 +9,52 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava.core.AbstractVerticle;
+import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import io.vertx.rxjava.servicediscovery.spi.ServiceImporter;
 import io.vertx.servicediscovery.consul.ConsulServiceImporter;
-import jp.skypencil.brownie.event.VideoUploadedEvent;
+import jp.skypencil.brownie.UuidCodec;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * An entry point to launch the set of verticles.
- * Responsible to configure &amp; launch other verticles.
- */
 @Slf4j
-public class MainVerticle extends AbstractVerticle {
+public class ThumbnailMain extends AbstractVerticle {
     private AsyncSQLClient sqlClient;
     private ServiceDiscovery discovery;
-
-    /**
-     * An entry point for debugging
-     */
-    public static void main(String[] args) {
-        // specify logging framework
-        // http://vertx.io/docs/vertx-core/java/#_logging
-        System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.SLF4JLogDelegateFactory");
-
-        io.vertx.core.Vertx.vertx().deployVerticle(new MainVerticle());
-    }
+    private ThumbnailServer server;
 
     @Override
-    public void start() throws Exception {
-        log.info("MainVerticle started");
-
-        getVertx().eventBus().registerDefaultCodec(UUID.class, new UuidCodec());
-        getVertx().eventBus().registerDefaultCodec(VideoUploadedEvent.class, new VideoUploadedEventCodec());
+    public void start(Future<Void> startFuture) {
+        log.info("Start deploying thumbnail service...");
 
         Injector injector = createInjector();
         DeploymentOptions options = new DeploymentOptions().setConfig(config());
-        getVertx().deployVerticle(injector.getInstance(FrontendServer.class), options);
-        getVertx().deployVerticle(injector.getInstance(EncodeServer.class), options);
+        server = injector.getInstance(ThumbnailServer.class);
+
+        getVertx().eventBus().registerDefaultCodec(UUID.class, new UuidCodec());
+
+        RxHelper.deployVerticle(vertx, server, options)
+            .toSingle()
+            .subscribe(deploymentID -> {
+                log.info("thumbnail service has been deployed successfully. Its deploymentID is {}", deploymentID);
+                startFuture.complete();
+            }, startFuture::fail);
+    }
+
+    @Override
+    public void stop(Future<Void> stopFuture) {
+        log.info("Start stopping thumbnail service...");
+
+        vertx.undeployObservable(server.deploymentID())
+            .flatMap(v -> {
+                return sqlClient.closeObservable();
+            })
+            .toSingle()
+            .subscribe(v -> {
+                log.info("thumbnail service has been undeployed successfully.");
+                stopFuture.complete();
+            }, stopFuture::fail);
     }
 
     private Injector createInjector() {
@@ -62,23 +68,8 @@ public class MainVerticle extends AbstractVerticle {
                     .put("port", config().getInteger("BROWNIE_CONSUL_PORT", 8500))
                     .put("scan-period", 2000));
 
-
-        Injector injector = Guice.createInjector(new BrownieModule(vertx, sqlClient, discovery));
+        Injector injector = Guice.createInjector(new ThumbnailModule(vertx, sqlClient, discovery));
         return injector;
-    }
-
-    @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
-        sqlClient.closeObservable()
-            .toSingle()
-            .map(v -> {
-                Set<String> deploymentIDs = getVertx().deploymentIDs();
-                deploymentIDs.forEach(deploymentID -> {
-                    getVertx().undeploy(deploymentID);
-                });
-                return v;
-            })
-            .subscribe(stopFuture::complete, stopFuture::fail);
     }
 
     private JsonObject createPostgresConfig() {

@@ -32,6 +32,10 @@
     </dependency>
     <dependency>
       <groupId>jp.skypencil.brownie</groupId>
+      <artifactId>thumbnail</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jp.skypencil.brownie</groupId>
       <artifactId>legacy</artifactId>
     </dependency>
   </dependencies>
@@ -74,6 +78,7 @@
               <sourceDirectories>
                 <sourceDirectory>${project.basedir}/../common/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../file-storage/src/main/java</sourceDirectory>
+                <sourceDirectory>${project.basedir}/../thumbnail-generator/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../legacy/src/main/java</sourceDirectory>
               </sourceDirectories>
             </configuration>

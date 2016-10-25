@@ -1,4 +1,4 @@
-package jp.skypencil.brownie.registry;
+package jp.skypencil.brownie.thumbnail;
 
 import java.util.UUID;
 
@@ -17,7 +17,6 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.ext.asyncsql.PostgreSQLClient;
 import jp.skypencil.brownie.MimeType;
-import jp.skypencil.brownie.ThumbnailMetadata;
 
 @RunWith(VertxUnitRunner.class)
 public class ThumbnailMetadataRegistryOnPostgresTest {

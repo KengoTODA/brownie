@@ -1,4 +1,4 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.thumbnail;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,10 +10,11 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
-import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
@@ -21,9 +22,16 @@ import io.vertx.rxjava.core.file.AsyncFile;
 import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
+import io.vertx.rxjava.core.http.HttpServer;
+import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.core.streams.Pump;
+import io.vertx.rxjava.ext.web.Router;
+import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
-import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
+import io.vertx.rxjava.servicediscovery.types.HttpEndpoint;
+import io.vertx.servicediscovery.Record;
+import jp.skypencil.brownie.IdGenerator;
+import jp.skypencil.brownie.MimeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
@@ -43,9 +51,88 @@ public class ThumbnailServer extends AbstractVerticle {
 
     private final IdGenerator idGenerator;
 
+    private HttpServer server;
+
+    private String registration;
+
     @Override
-    public void start() throws Exception {
+    public void start(Future<Void> startFuture) throws Exception {
         registerEventListeners();
+        Router router = createRouter();
+
+        String httpHost = config().getString("BROWNIE_CLUSTER_HTTP_HOST", "localhost");
+        Integer httpPort = config().getInteger("BROWNIE_CLUSTER_HTTP_PORT", 8080);
+        server = vertx.createHttpServer().requestHandler(router::accept);
+        server.listenObservable(httpPort)
+            .flatMap(v -> {
+                Record record = HttpEndpoint.createRecord("thumbnail", httpHost, httpPort, "/thumbnail");
+                return discovery.publishObservable(record);
+            })
+            .map(record -> {
+                registration = record.getRegistration();
+                return record;
+            })
+            .subscribe(v -> {
+                log.info("HTTP server is listening {} port", httpPort);
+                startFuture.complete();
+            }, startFuture::fail);
+    }
+
+    @Override
+    public void stop(Future<Void> stopFuture) throws Exception {
+        if (server == null) {
+            stopFuture.fail(new IllegalStateException("This vertical has not been started yet"));
+        } else {
+            discovery.unpublishObservable(registration)
+                .flatMap(v -> {
+                    return server.closeObservable();
+                })
+                .subscribe(stopFuture::complete, stopFuture::fail);
+        }
+    }
+
+    private Router createRouter() {
+        Router router = Router.router(vertx);
+        router.get("/thumbnail/:videoId").handler(this::getThumbnail);
+        return router;
+    }
+
+    private Single<ThumbnailMetadata> findMetadataFor(UUID videoId) {
+        return thumbnailMetadataRegistry.search(videoId)
+                .first().toSingle();
+    }
+
+    void getThumbnail(RoutingContext ctx) {
+        UUID videoId = UUID.fromString(ctx.request().getParam("videoId"));
+        HttpServerResponse response = ctx.response().setChunked(true);
+        Future<Void> closed = Future.future();
+        Single<HttpClient> clientSingle = createHttpClientForFileStorage(closed);
+        Single<ThumbnailMetadata> metadataSingle = findMetadataFor(videoId);
+        Single.zip(clientSingle, metadataSingle, (client, metadata) -> {
+            response
+                .putHeader("File-Id", metadata.getVideoId().toString())
+                .putHeader("Thumbnail-Width", Long.toString(metadata.getWidth()))
+                .putHeader("Thumbnail-Height", Long.toString(metadata.getHeight()))
+                .putHeader("Content-Type", metadata.getMimeType().toString())
+                .putHeader("Content-Length", Long.toString(metadata.getContentLength()));
+            return RxHelper.get(client, "/file/" + metadata.getVideoId());
+        })
+        .toObservable()
+        .flatMap(nested -> nested)
+        .toSingle()
+        .map(clientRes -> {
+            Handler<Throwable> exceptionHandler = ex -> {
+                closed.fail(ex);
+                ctx.fail(ex);
+            };
+            clientRes.exceptionHandler(exceptionHandler).endHandler(v -> {
+                closed.complete();
+                response.end();
+            });
+            response.exceptionHandler(exceptionHandler);
+            return Pump.pump(clientRes, response).start();
+        })
+        .subscribe(v -> {}, ctx::fail);
     }
 
     @Nonnull
@@ -95,8 +182,6 @@ public class ThumbnailServer extends AbstractVerticle {
     }
 
     private void registerEventListeners() {
-        log.info("Thumbnail server has been started");
-
         // TODO vertx's event bus may lose message. http://vertx.io/docs/vertx-core/java/#_the_theory
         // To achieve the choreography, we need to persist event.
         MessageConsumer<UUID> consumer = vertx.eventBus().consumer("generate-thumbnail");

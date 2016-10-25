@@ -1,11 +1,10 @@
-package jp.skypencil.brownie.registry;
+package jp.skypencil.brownie.thumbnail;
 
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import jp.skypencil.brownie.ThumbnailMetadata;
 import rx.Observable;
 import rx.Single;
 

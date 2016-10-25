@@ -37,7 +37,6 @@ public class BrownieModuleTest {
         Injector injector = Guice.createInjector(module);
         injector.getInstance(FrontendServer.class);
         injector.getInstance(EncodeServer.class);
-        injector.getInstance(ThumbnailServer.class);
     }
 
 }

@@ -1,4 +1,4 @@
-package jp.skypencil.brownie.registry;
+package jp.skypencil.brownie.thumbnail;
 
 import java.util.UUID;
 
@@ -7,7 +7,6 @@ import javax.inject.Inject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
-import jp.skypencil.brownie.ThumbnailMetadata;
 import lombok.RequiredArgsConstructor;
 import rx.Observable;
 import rx.Single;

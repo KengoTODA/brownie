@@ -1,4 +1,4 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.thumbnail;
 
 import java.util.UUID;
 
@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import jp.skypencil.brownie.MimeType;
 import lombok.Value;
 
 @Value

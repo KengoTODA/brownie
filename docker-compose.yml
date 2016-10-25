@@ -69,6 +69,7 @@ services:
     build: file-storage
     volumes:
       - storage:/mnt/brownie
+    dns_search: ''
     depends_on:
       - consul
       - file_storage_db
@@ -90,6 +91,31 @@ services:
       - consul
     volumes:
       - ./file-storage/src/main/sql:/docker-entrypoint-initdb.d
+  thumbnail:
+    build: thumbnail
+    dns_search: ''
+    depends_on:
+      - consul
+      - file_storage
+      - thumbnail_db
+    expose:
+      - "8080"
+      - "5701"
+      - "54327/udp"
+  thumbnail_db:
+    image: postgres:9
+    environment:
+      - POSTGRES_USER=brownie
+      - POSTGRES_PASSWORD=brownie
+      - POSTGRES_DB=brownie
+    expose:
+      - "5432"
+    ports:
+      - "35432:5432" # for JUnit
+    depends_on:
+      - consul
+    volumes:
+      - ./thumbnail/src/main/sql:/docker-entrypoint-initdb.d
 volumes:
   storage:
     external: false

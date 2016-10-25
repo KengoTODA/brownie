@@ -1,4 +1,4 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.thumbnail;
 
 import java.io.File;
 

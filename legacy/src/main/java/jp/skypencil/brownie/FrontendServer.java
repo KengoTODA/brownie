@@ -17,7 +17,6 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.RxHelper;
-import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
@@ -31,7 +30,6 @@ import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
-import jp.skypencil.brownie.registry.ThumbnailMetadataRegistry;
 import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -62,8 +60,6 @@ public class FrontendServer extends AbstractVerticle {
     private final String directory = createDirectory();
 
     private final VideoUploadedEventRegistry observableTaskRegistry;
-
-    private final ThumbnailMetadataRegistry thumbnailMetadataRegistry;
 
     private final ServiceDiscovery discovery;
 
@@ -198,23 +194,8 @@ public class FrontendServer extends AbstractVerticle {
     }
 
     private void downloadThumbnail(RoutingContext ctx) {
-        UUID videoId = UUID.fromString(ctx.request().getParam("videoId"));
-        HttpServerResponse response = ctx.response();
-        Future<Void> closed = Future.future();
-        Single<HttpClient> clientSingle = createHttpClientForFileStorage(closed);
-        Single<UUID> thumbnailIdSingle = findThumbnailFileIdFor(videoId);
-        Single.zip(clientSingle, thumbnailIdSingle, (client, thumbnailId) -> {
-            return client.get("/file/" + thumbnailId);
-        })
-        .toObservable()
-        .flatMap(clientReq -> {
-            Observable<Buffer> result = clientReq.toObservable()
-                    .flatMap(HttpClientResponse::toObservable);
-            clientReq.end();
-            return result;
-        })
-        .doAfterTerminate(closed::complete)
-        .subscribe(response::write, ctx::fail, response::end);
+        // TODO ask thumbnail service to respond thumbnail file
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -240,12 +221,6 @@ public class FrontendServer extends AbstractVerticle {
             })
             .toSingle();
         return clientSingle;
-    }
-
-    private Single<UUID> findThumbnailFileIdFor(UUID videoId) {
-        return thumbnailMetadataRegistry.search(videoId)
-                .first().toSingle()
-                .map(ThumbnailMetadata::getId);
     }
 
     private void deleteFile(RoutingContext ctx, String fileId) {
