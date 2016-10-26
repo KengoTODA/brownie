@@ -18,6 +18,7 @@
   </description>
 
   <properties>
+    <mdep.analyze.skip>true</mdep.analyze.skip>
     <coveralls.skip>true</coveralls.skip>
   </properties>
 

@@ -1,10 +1,8 @@
 package jp.skypencil.brownie;
 
-import static org.junit.Assert.*;
+import static com.google.common.truth.Truth.assertThat;
 
 import java.util.UUID;
-
-import static org.hamcrest.CoreMatchers.*;
 
 import javax.annotation.meta.When;
 
@@ -17,23 +15,22 @@ public class FileIdTest {
     @Test
     public void testCheckObject() {
          Checker checker = new FileId.Checker();
-         assertThat(checker.forConstantValue(null, new Object()),
-                 is(When.NEVER));
+         assertThat(checker.forConstantValue(null, new Object()))
+                 .isSameAs(When.NEVER);
     }
 
     @Test
     public void testCheckUUID1() {
          Checker checker = new FileId.Checker();
-         assertThat(checker.forConstantValue(null, UUID.fromString(new com.eaio.uuid.UUID().toString())),
-                 is(When.MAYBE));
+         assertThat(checker.forConstantValue(null, new IdGenerator().generateUuidV1()))
+                 .isSameAs(When.MAYBE);
     }
 
     @Test
     public void testCheckUUID4() {
          Checker checker = new FileId.Checker();
-         assertThat(checker.forConstantValue(null, UUID.randomUUID()),
-                 is(When.NEVER));
+         assertThat(checker.forConstantValue(null, UUID.randomUUID()))
+                 .isSameAs(When.NEVER);
     }
-
 
 }

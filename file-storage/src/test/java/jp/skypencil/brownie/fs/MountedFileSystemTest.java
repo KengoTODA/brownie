@@ -3,6 +3,7 @@ package jp.skypencil.brownie.fs;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.UUID;
 
 import org.junit.After;
@@ -11,8 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-
-import com.google.common.io.Files;
 
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -72,7 +71,7 @@ public class MountedFileSystemTest {
         })
         .subscribe(file -> {
             try {
-                context.assertEquals("buffer", Files.toString(file, StandardCharsets.UTF_8));
+                context.assertEquals("buffer", Files.lines(file.toPath(), StandardCharsets.UTF_8).findFirst().get());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

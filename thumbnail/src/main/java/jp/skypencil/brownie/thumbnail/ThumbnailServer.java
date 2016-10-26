@@ -201,7 +201,7 @@ public class ThumbnailServer extends AbstractVerticle {
     }
 
     Tuple2<File, ThumbnailMetadata> generateMetadata(Tuple2<File, UUID> thumbnailAndVideoId) {
-        UUID id = UUID.fromString(new com.eaio.uuid.UUID().toString());
+        UUID id = idGenerator.generateUuidV1();
         UUID videoId = thumbnailAndVideoId._2();
         MimeType mimeType = MimeType.valueOf("image/jpg");
         File thumbnail = thumbnailAndVideoId._1();

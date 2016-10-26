@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import io.vertx.core.Handler;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
+import jp.skypencil.brownie.IdGenerator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,8 @@ class ThumbnailGeneratorFFmpeg implements ThumbnailGenerator {
 
     private final Vertx rxJavaVertx;
 
+    private final IdGenerator idGenerator;
+
     @Override
     public Single<File> generate(File video, int milliseconds) {
         return rxJavaVertx.executeBlockingObservable(generateInternal(video, milliseconds)).toSingle();
@@ -33,7 +36,7 @@ class ThumbnailGeneratorFFmpeg implements ThumbnailGenerator {
 
     private Handler<Future<File>> generateInternal(File video, 
             @Nonnegative int milliseconds) {
-        File thumbnail = new File(TEMP_DIR, new com.eaio.uuid.UUID() + ".jpg");
+        File thumbnail = new File(TEMP_DIR, idGenerator.generateUuidV1() + ".jpg");
         return future -> {
             log.info("Start generating thumbnail of {}...", video.getAbsolutePath());
             // https://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video

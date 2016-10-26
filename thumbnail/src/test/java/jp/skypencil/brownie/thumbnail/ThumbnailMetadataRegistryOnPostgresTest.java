@@ -1,13 +1,12 @@
 package jp.skypencil.brownie.thumbnail;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import com.google.common.base.Objects;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -69,7 +68,7 @@ public class ThumbnailMetadataRegistryOnPostgresTest {
         registry.store(metadata).toObservable().flatMap(v -> {
             return registry.search(videoId);
         }).filter(searched -> {
-            return Objects.equal(metadata, searched);
+            return Objects.equals(metadata, searched);
         }).toSingle().subscribe(searched -> {
             async.complete();
         }, context::fail);

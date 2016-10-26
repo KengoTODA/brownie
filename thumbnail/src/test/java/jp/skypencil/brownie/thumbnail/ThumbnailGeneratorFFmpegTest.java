@@ -14,6 +14,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
+import jp.skypencil.brownie.IdGenerator;
 
 @RunWith(VertxUnitRunner.class)
 public class ThumbnailGeneratorFFmpegTest {
@@ -23,7 +24,7 @@ public class ThumbnailGeneratorFFmpegTest {
     @Before
     public void setUp() {
         vertx = Vertx.vertx();
-        generator = new ThumbnailGeneratorFFmpeg(vertx);
+        generator = new ThumbnailGeneratorFFmpeg(vertx, new IdGenerator());
     }
 
     @After

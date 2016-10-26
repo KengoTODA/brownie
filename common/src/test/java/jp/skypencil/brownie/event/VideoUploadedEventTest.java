@@ -1,10 +1,6 @@
 package jp.skypencil.brownie.event;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
+import static com.google.common.truth.Truth.assertThat;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -22,20 +18,20 @@ public class VideoUploadedEventTest {
                 Collections.singleton("resolution"), now);
         assertThat(
                 new VideoUploadedEvent(task.getId(), "fileName",
-                        Collections.singleton("resolution"), now).hashCode(),
-                is(equalTo(task.hashCode())));
+                        Collections.singleton("resolution"), now).hashCode())
+                .isEqualTo(task.hashCode());
         assertThat(
                 new VideoUploadedEvent(task.getId(), "anotherFileName",
-                        Collections.singleton("resolution"), now).hashCode(),
-                is(not(equalTo(task.hashCode()))));
+                        Collections.singleton("resolution"), now).hashCode())
+                .isNotEqualTo(task.hashCode());
         assertThat(
                 new VideoUploadedEvent(task.getId(), "fileName",
-                        Collections.singleton("anotherResolution"), now).hashCode(),
-                is(not(equalTo(task.hashCode()))));
+                        Collections.singleton("anotherResolution"), now).hashCode())
+                .isNotEqualTo(task.hashCode());
         assertThat(
                 new VideoUploadedEvent(UUID.randomUUID(), "fileName",
-                        Collections.singleton("resolution"), now),
-                is(not(equalTo(task.hashCode()))));
+                        Collections.singleton("resolution"), now))
+                .isNotEqualTo(task.hashCode());
     }
 
     @Test
@@ -45,29 +41,29 @@ public class VideoUploadedEventTest {
                 Collections.singleton("resolution"), now);
         assertThat(
                 new VideoUploadedEvent(task.getId(), "fileName",
-                        Collections.singleton("resolution"), now),
-                is(equalTo(task)));
+                        Collections.singleton("resolution"), now))
+                .isEqualTo(task);
         assertThat(
                 new VideoUploadedEvent(task.getId(), "anotherFileName",
-                        Collections.singleton("resolution"), now),
-                is(not(equalTo(task))));
+                        Collections.singleton("resolution"), now))
+                .isNotEqualTo(task);
         assertThat(
                 new VideoUploadedEvent(task.getId(), "fileName",
-                        Collections.singleton("anotherResolution"), now),
-                is(not(equalTo(task))));
+                        Collections.singleton("anotherResolution"), now))
+                .isNotEqualTo(task);
         assertThat(
                 new VideoUploadedEvent(UUID.randomUUID(), "fileName",
-                        Collections.singleton("resolution"), now),
-                is(not(equalTo(task))));
+                        Collections.singleton("resolution"), now))
+                .isNotEqualTo(task);
     }
 
     @Test
     public void testToString() {
         String json = new VideoUploadedEvent(UUID.randomUUID(), "fileName",
                 Collections.singleton("resolution")).toJson();
-        assertThat(json, is(containsString("\"id\"")));
-        assertThat(json, is(containsString("\"fileName\"")));
-        assertThat(json, is(containsString("\"resolutions\"")));
-        assertThat(json, is(containsString("[\"resolution\"]")));
+        assertThat(json).contains("\"id\"");
+        assertThat(json).contains("\"fileName\"");
+        assertThat(json).contains("\"resolutions\"");
+        assertThat(json).contains("[\"resolution\"]");
     }
 }

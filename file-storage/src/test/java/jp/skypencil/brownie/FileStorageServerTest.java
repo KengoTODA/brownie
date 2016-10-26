@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -17,8 +18,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-
-import com.google.common.io.Files;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -229,7 +228,7 @@ public class FileStorageServerTest {
         Async async = context.async();
         UUID fileId = UUID.randomUUID();
         File file = folder.newFile();
-        Files.write("file", file, StandardCharsets.UTF_8);
+        Files.write(file.toPath(), "file".getBytes(StandardCharsets.UTF_8));
         MimeType mimetype = MimeType.valueOf("text/plain");
         FileMetadata metadata = new FileMetadata(fileId, "name", mimetype, 4, Instant.now());
         doReturn(Single.just(metadata)).when(fileTransporter)
