@@ -1,4 +1,4 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.encoder;
 
 import java.io.File;
 import java.io.IOException;

@@ -32,6 +32,10 @@
     </dependency>
     <dependency>
       <groupId>jp.skypencil.brownie</groupId>
+      <artifactId>encoder</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jp.skypencil.brownie</groupId>
       <artifactId>thumbnail</artifactId>
     </dependency>
     <dependency>
@@ -78,6 +82,7 @@
               <sourceDirectories>
                 <sourceDirectory>${project.basedir}/../common/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../file-storage/src/main/java</sourceDirectory>
+                <sourceDirectory>${project.basedir}/../encoder/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../thumbnail/src/main/java</sourceDirectory>
                 <sourceDirectory>${project.basedir}/../legacy/src/main/java</sourceDirectory>
               </sourceDirectories>

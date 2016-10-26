@@ -121,6 +121,11 @@
       </dependency>
       <dependency>
         <groupId>jp.skypencil.brownie</groupId>
+        <artifactId>encoder</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jp.skypencil.brownie</groupId>
         <artifactId>thumbnail</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -245,6 +250,7 @@
   <modules>
     <module>common</module>
     <module>file-storage</module>
+    <module>encoder</module>
     <module>thumbnail</module>
     <module>legacy</module>
     <module>test-aggregator</module>

@@ -3,7 +3,6 @@ let ReactDOM = require('react-dom');
 let $;
 window.jQuery = $ = require('./jquery-2.1.4.min');
 let bootstrap = require('./bootstrap.min');
-let TaskList = require('./task-list.jsx');
 let FileList = require('./file-list.jsx');
 require('./css/bootstrap.min.css');
 require('./main.css');
@@ -38,10 +37,6 @@ function setupForm() {
 
 setupForm();
 
-ReactDOM.render(
-  <TaskList pollInterval={2000} />,
-  document.getElementById('tasks')
-);
 ReactDOM.render(
   <FileList pollInterval={2000} />,
   document.getElementById('files')

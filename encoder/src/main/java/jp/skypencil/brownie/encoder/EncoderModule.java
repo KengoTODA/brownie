@@ -1,15 +1,17 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.encoder;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
 
 import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import jp.skypencil.brownie.CommonModule;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-class BrownieModule extends AbstractModule implements Module {
+class EncoderModule extends AbstractModule {
     private final Vertx vertx;
+    private final AsyncSQLClient sqlClient;
     private final ServiceDiscovery discovery;
 
     @Override
@@ -17,6 +19,9 @@ class BrownieModule extends AbstractModule implements Module {
         install(new CommonModule());
 
         bind(Vertx.class).toInstance(vertx);
+        bind(AsyncSQLClient.class).toInstance(sqlClient);
         bind(ServiceDiscovery.class).toInstance(discovery);
+
+        bind(FileEncoder.class).to(FileEncoderFFmpeg.class);
     }
 }

@@ -10,8 +10,8 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>legacy</artifactId>
-  <name>Legacy - common set of services</name>
+  <artifactId>encoder</artifactId>
+  <name>Brownie : Encoder Service</name>
 
   <dependencies>
     <dependency>
@@ -28,7 +28,7 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-unit</artifactId>
+      <artifactId>vertx-mysql-postgresql-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -63,6 +63,10 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-unit</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
     </dependency>
@@ -79,26 +83,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>exec-maven-plugin</artifactId>
-        <groupId>org.codehaus.mojo</groupId>
-        <executions>
-          <execution>
-            <id>exec-npm-build</id>
-            <phase>generate-resources</phase>
-            <configuration>
-              <executable>npm</executable>
-              <arguments>
-                <argument>run</argument>
-                <argument>build</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
@@ -113,7 +97,7 @@
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>io.vertx.core.Launcher</Main-Class>
-                    <Main-Verticle>jp.skypencil.brownie.MainVerticle</Main-Verticle>
+                    <Main-Verticle>jp.skypencil.brownie.encoder.EncoderMain</Main-Verticle>
                   </manifestEntries>
                 </transformer>
               </transformers>

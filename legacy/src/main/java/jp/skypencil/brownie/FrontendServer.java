@@ -30,7 +30,6 @@ import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
-import jp.skypencil.brownie.registry.VideoUploadedEventRegistry;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +58,6 @@ public class FrontendServer extends AbstractVerticle {
      */
     private final String directory = createDirectory();
 
-    private final VideoUploadedEventRegistry observableTaskRegistry;
-
     private final ServiceDiscovery discovery;
 
     @Nonnull
@@ -88,7 +85,6 @@ public class FrontendServer extends AbstractVerticle {
         // Serve the form handling part
         router.route("/form").handler(BodyHandler.create().setUploadsDirectory(directory));
         router.post("/form").handler(this::handleForm);
-        router.mountSubRouter("/tasks", createRouterForTaskApi());
         router.mountSubRouter("/files", createRouterForFileApi());
         router.mountSubRouter("/thumbnail", createRouterForThumbnailApi());
         // Serve the static pages
@@ -128,16 +124,14 @@ public class FrontendServer extends AbstractVerticle {
                         });
                     return result;
                 })
-                .flatMap(res -> {
+                .map(res -> {
                     if (res.statusCode() != 200) {
                         throw new RuntimeException("Failed to store uploaded video to file storage. Status code is: " + res.statusCode() + ", status message is: " + res.statusMessage());
                     }
                     UUID fileId = UUID.fromString(res.getHeader("File-Id"));
                     VideoUploadedEvent event = new VideoUploadedEvent(fileId, fileUpload.fileName(), Collections.singleton("vga"));
-                    return observableTaskRegistry.store(event);
-                })
-                .doOnSuccess(event -> {
                     vertx.eventBus().send("file-uploaded", event);
+                    return event;
                 })
                 .toObservable()
                 .doOnCompleted(closed::complete);
@@ -147,30 +141,6 @@ public class FrontendServer extends AbstractVerticle {
         }, () -> {
             response.end("registered");
         });
-    }
-
-    private Router createRouterForTaskApi() {
-        Router subRouter = Router.router(vertx);
-        subRouter.route().handler(ctx -> {
-            HttpServerResponse response = ctx.response()
-                    .setChunked(true)
-                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json");
-                StringBuilder responseBody = new StringBuilder("[");
-                observableTaskRegistry.iterate().subscribe(task -> {
-                    if (responseBody.length() != 1) {
-                        responseBody.append(",");
-                    }
-                    responseBody.append(task.toJson());
-                }, error -> {
-                    log.warn("Failed to load tasks", error);
-                    response
-                        .setStatusCode(500)
-                        .end("Failed to load tasks");
-                }, () -> {
-                    response.end(responseBody.append("]").toString());
-                });
-        });
-        return subRouter;
     }
 
     private Router createRouterForFileApi() {

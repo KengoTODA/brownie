@@ -1,4 +1,4 @@
-package jp.skypencil.brownie;
+package jp.skypencil.brownie.encoder;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +25,7 @@ import io.vertx.rxjava.core.http.HttpClientResponse;
 import io.vertx.rxjava.core.streams.Pump;
 import io.vertx.rxjava.core.streams.ReadStream;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import jp.skypencil.brownie.IdGenerator;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +101,7 @@ public class EncodeServer extends AbstractVerticle {
     }
 
     private void registerEventListeners() {
-        MessageConsumer<VideoUploadedEvent> consumer = vertx.eventBus().localConsumer("file-uploaded");
+        MessageConsumer<VideoUploadedEvent> consumer = vertx.eventBus().consumer("file-uploaded");
         consumer.toObservable().flatMap(message -> {
             VideoUploadedEvent event = message.body();
             return (Observable<Tuple2<File, Message<VideoUploadedEvent>>>)

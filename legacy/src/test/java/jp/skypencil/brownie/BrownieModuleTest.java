@@ -13,7 +13,6 @@ import com.google.inject.Injector;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.rxjava.core.Vertx;
-import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 
 @RunWith(VertxUnitRunner.class)
@@ -24,7 +23,7 @@ public class BrownieModuleTest {
     @Before
     public void setUp() {
         vertx = Vertx.vertx();
-        module = new BrownieModule(vertx, mock(AsyncSQLClient.class), mock(ServiceDiscovery.class));
+        module = new BrownieModule(vertx, mock(ServiceDiscovery.class));
     }
 
     @After
@@ -36,7 +35,6 @@ public class BrownieModuleTest {
     public void ensureItCanGenerateVerticles() {
         Injector injector = Guice.createInjector(module);
         injector.getInstance(FrontendServer.class);
-        injector.getInstance(EncodeServer.class);
     }
 
 }
