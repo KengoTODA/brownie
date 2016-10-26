@@ -19,8 +19,8 @@
       <artifactId>vertx-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.eaio.uuid</groupId>
-      <artifactId>uuid</artifactId>
+      <groupId>com.fasterxml.uuid</groupId>
+      <artifactId>java-uuid-generator</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

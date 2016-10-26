@@ -67,9 +67,9 @@
         <version>${vertx.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.eaio.uuid</groupId>
-        <artifactId>uuid</artifactId>
-        <version>3.4</version>
+        <groupId>com.fasterxml.uuid</groupId>
+        <artifactId>java-uuid-generator</artifactId>
+        <version>3.1.4</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -284,13 +284,6 @@
       </plugin>
     </plugins>
   </build>
-  <repositories>
-    <repository>
-      <!-- to download com.eaio.uuid:uuid -->
-      <id>eaio.com</id>
-      <url>http://repo.eaio.com/maven2</url>
-    </repository>
-  </repositories>
   <modules>
     <module>common</module>
     <module>file-storage</module>
