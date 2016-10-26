@@ -56,14 +56,4 @@ public class VideoUploadedEventTest {
                         Collections.singleton("resolution"), now))
                 .isNotEqualTo(task);
     }
-
-    @Test
-    public void testToString() {
-        String json = new VideoUploadedEvent(UUID.randomUUID(), "fileName",
-                Collections.singleton("resolution")).toJson();
-        assertThat(json).contains("\"id\"");
-        assertThat(json).contains("\"fileName\"");
-        assertThat(json).contains("\"resolutions\"");
-        assertThat(json).contains("[\"resolution\"]");
-    }
 }

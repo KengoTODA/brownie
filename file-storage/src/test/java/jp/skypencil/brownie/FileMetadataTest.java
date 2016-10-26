@@ -34,15 +34,6 @@ public class FileMetadataTest {
     }
 
     @Test
-    public void testToJson() {
-        String json = new FileMetadata(UUID.randomUUID(), "name",
-                MimeType.valueOf("text/plain"), 0, Instant.now()).toJson();
-        assertThat(json).contains("\"fileId\"");
-        assertThat(json).contains("\"fileName\":\"name\"");
-        assertThat(json).contains("\"text/plain\"");
-    }
-
-    @Test
     public void testToJsonObject() {
         UUID uuid = UUID.randomUUID();
         Instant instant = Instant.now();

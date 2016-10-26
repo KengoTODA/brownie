@@ -28,11 +28,6 @@ public class FileMetadata implements Serializable {
     @Nonnull
     Instant generated;
 
-    public String toJson() {
-        return String.format("{\"fileId\":\"%s\",\"fileName\":\"%s\",\"mimeType\":\"%s\",\"contentLength\":%d,\"generated\":%d}",
-                fileId, name, mimeType, contentLength, generated.toEpochMilli());
-    }
-
     public JsonObject toJsonObject() {
         return new JsonObject()
                 .put("id", fileId.toString())

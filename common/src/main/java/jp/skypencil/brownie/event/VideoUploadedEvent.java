@@ -37,16 +37,6 @@ public final class VideoUploadedEvent {
         this.registered = registered;
     }
 
-    public String toJson() {
-        return String.format("{\"id\":\"%s\",\"fileName\":\"%s\",\"resolutions\":[%s],\"registered\":%d}",
-                id,
-                uploadedFileName,
-                resolutions.stream()
-                    .map(resolution -> "\"" + resolution + "\"")
-                    .collect(Collectors.joining(",")),
-                registered.toEpochMilli());
-    }
-
     @Nonnull
     public JsonArray toJsonArray() {
         return new JsonArray()
