@@ -31,22 +31,17 @@ services:
       - "80:80"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
-      - ./src/main/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
+      - ./legacy/src/main/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
     depends_on:
       - front
     environment:
       - DEFAULT_HOST=front.service.consul
   front:
-    build: .
-    volumes:
-      - storage:/mnt/brownie
+    build: legacy
     depends_on:
       - consul
-      - db
-    dns:
-      - consul
-    dns_search:
-      - service.consul
+      - file_storage
+    dns_search: ''
     expose:
       - "8080"
       - "5701"
@@ -54,20 +49,67 @@ services:
     environment:
       - VIRTUAL_HOST=front.service.consul
       - VIRTUAL_PORT=8080
-  db:
+  file_storage:
+    build: file-storage
+    volumes:
+      - storage:/mnt/brownie
+    dns_search: ''
+    depends_on:
+      - consul
+      - file_storage_db
+    expose:
+      - "8080"
+      - "5701"
+      - "54327/udp"
+  file_storage_db:
     image: postgres:9
     environment:
       - POSTGRES_USER=brownie
       - POSTGRES_PASSWORD=brownie
       - POSTGRES_DB=brownie
-    ports:
-      - "5432:5432" # for JUnit test
     expose:
       - "5432"
+    ports:
+      - "25432:5432" # for JUnit
     depends_on:
       - consul
     volumes:
-      - ./src/main/sql:/docker-entrypoint-initdb.d
+      - ./file-storage/src/main/sql:/docker-entrypoint-initdb.d
+  encoder:
+    build: encoder
+    dns_search: ''
+    depends_on:
+      - consul
+      - file_storage
+    expose:
+      - "8080"
+      - "5701"
+      - "54327/udp"
+  thumbnail:
+    build: thumbnail
+    dns_search: ''
+    depends_on:
+      - consul
+      - file_storage
+      - thumbnail_db
+    expose:
+      - "8080"
+      - "5701"
+      - "54327/udp"
+  thumbnail_db:
+    image: postgres:9
+    environment:
+      - POSTGRES_USER=brownie
+      - POSTGRES_PASSWORD=brownie
+      - POSTGRES_DB=brownie
+    expose:
+      - "5432"
+    ports:
+      - "35432:5432" # for JUnit
+    depends_on:
+      - consul
+    volumes:
+      - ./thumbnail/src/main/sql:/docker-entrypoint-initdb.d
 volumes:
   storage:
     external: false

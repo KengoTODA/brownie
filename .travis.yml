@@ -5,16 +5,16 @@ services:
 jdk:
   - oraclejdk8
 install:
-  - npm install
+  - pushd legacy && npm install && popd
   - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 before_script:
-  - docker run -d -p 15432:5432 -v "$(pwd)/src/main/sql:/docker-entrypoint-initdb.d" --name postgres -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
+  - docker run -d -p 25432:5432 -v "$(pwd)/file-storage/src/main/sql:/docker-entrypoint-initdb.d" --name postgres-file-storage -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
+  - docker run -d -p 35432:5432 -v "$(pwd)/thumbnail/src/main/sql:/docker-entrypoint-initdb.d" --name postgres-thumbnail -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
 script:
-  - mvn clean verify -Ddb.host=localhost -Ddb.port=15432
+  - mvn clean verify
 after_script:
-  - docker stop postgres
-after_success:
-  - mvn jacoco:report coveralls:report
+  - docker stop postgres-file-storage
+  - docker stop postgres-thumbnail
 notifications:
   email:
     recipients:

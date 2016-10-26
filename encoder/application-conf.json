@@ -1,0 +1,5 @@
+{
+  "BROWNIE_CLUSTER_HTTP_HOST": "encoder",
+  "BROWNIE_CONSUL_HOST": "consul",
+  "BROWNIE_POSTGRES_HOST": "encoder_db"
+}

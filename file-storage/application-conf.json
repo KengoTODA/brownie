@@ -1,0 +1,7 @@
+{
+  "BROWNIE_CLUSTER_HTTP_HOST": "file_storage",
+  "BROWNIE_CLUSTER_HTTP_PORT": 8080,
+  "BROWNIE_CONSUL_HOST": "consul",
+  "BROWNIE_MOUNTED_DIR": "/mnt/brownie",
+  "BROWNIE_POSTGRES_HOST": "file_storage_db"
+}

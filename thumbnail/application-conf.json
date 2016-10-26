@@ -1,0 +1,5 @@
+{
+  "BROWNIE_CLUSTER_HTTP_HOST": "thumbnail",
+  "BROWNIE_CONSUL_HOST": "consul",
+  "BROWNIE_POSTGRES_HOST": "thumbnail_db"
+}
