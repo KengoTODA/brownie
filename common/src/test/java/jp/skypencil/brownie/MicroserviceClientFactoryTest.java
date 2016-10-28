@@ -36,7 +36,7 @@ public class MicroserviceClientFactoryTest {
     public void testSucceededFuture(TestContext context) {
         Vertx vertx = Vertx.newInstance(rule.vertx());
         ServiceDiscovery discovery = ServiceDiscovery.create(vertx);
-        MicroserviceClientFactory factory = new MicroserviceClientFactory(discovery);
+        MicroserviceClientFactory factory = new MicroserviceClientFactory(vertx, discovery);
 
         Async async = context.async();
         factory.createClient("name", Future.succeededFuture())
@@ -57,7 +57,7 @@ public class MicroserviceClientFactoryTest {
         discovery.publish(HttpEndpoint.createRecord("name", "localhost"), ar -> {
             assertThat(ar.succeeded()).isTrue();
 
-            MicroserviceClientFactory factory = new MicroserviceClientFactory(discovery);
+            MicroserviceClientFactory factory = new MicroserviceClientFactory(vertx, discovery);
             Future<Void> future = spy(Future.future());
 
             factory.createClient("name", future).subscribe(client -> {
@@ -76,7 +76,7 @@ public class MicroserviceClientFactoryTest {
         discovery.publish(HttpEndpoint.createRecord("name", "localhost"), ar -> {
             assertThat(ar.succeeded()).isTrue();
 
-            MicroserviceClientFactory factory = new MicroserviceClientFactory(discovery);
+            MicroserviceClientFactory factory = new MicroserviceClientFactory(vertx, discovery);
             Future<Void> future = Future.future();
             AtomicReference<ServiceReference> reference = new AtomicReference<>();
 
@@ -96,4 +96,25 @@ public class MicroserviceClientFactoryTest {
         });
     }
 
+    @Test
+    public void openedBreakerStopClientGeneration(TestContext context) {
+        Vertx vertx = Vertx.newInstance(rule.vertx());
+        ServiceDiscovery discovery = spy(ServiceDiscovery.create(vertx));
+        Async async = context.async();
+
+        discovery.publish(HttpEndpoint.createRecord("name", "localhost"), ar -> {
+            assertThat(ar.succeeded()).isTrue();
+
+            MicroserviceClientFactory factory = new MicroserviceClientFactory(vertx, discovery);
+            factory.getBreaker("name").open();
+            Future<Void> future = spy(Future.future());
+
+            factory.createClient("name", future).subscribe(client -> {
+                context.fail();
+            }, e -> {
+                verify(discovery, never()).getRecordObservable(any(JsonObject.class));
+                async.complete();
+            });
+        });
+    }
 }

@@ -45,7 +45,7 @@ public class FrontendServerTest {
 
     @Test
     public void testHandleFormWithNoUploadedFile(TestContext context) {
-        FrontendServer server = new FrontendServer(new MicroserviceClientFactory(ServiceDiscovery.create(vertx)));
+        FrontendServer server = new FrontendServer(new MicroserviceClientFactory(vertx, ServiceDiscovery.create(vertx)));
 
         HttpServerResponse response = mock(HttpServerResponse.class);
         RoutingContext ctx = mock(RoutingContext.class);

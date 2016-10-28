@@ -1,13 +1,17 @@
 package jp.skypencil.brownie;
 
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.inject.Inject;
 
 import io.vertx.core.json.JsonObject;
+import io.vertx.rxjava.circuitbreaker.CircuitBreaker;
 import io.vertx.rxjava.core.Future;
+import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.http.HttpClient;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +28,17 @@ import rx.Single;
 @RequiredArgsConstructor(
         onConstructor = @__(@Inject))
 public class MicroserviceClientFactory {
+    private final Vertx vertx;
+
     private final ServiceDiscovery discovery;
+
+    private final ConcurrentMap<String, CircuitBreaker> breakers = new ConcurrentHashMap<>();
+
+    @Nonnull
+    /* visible only for test */ CircuitBreaker getBreaker(String name) {
+        return breakers.computeIfAbsent(name,
+                v -> CircuitBreaker.create(name, vertx));
+    }
 
     /**
      * @param name
@@ -43,18 +57,27 @@ public class MicroserviceClientFactory {
             return Single.error(new IllegalArgumentException("Given Future is already closed"));
         }
 
-        return discovery
-                .getRecordObservable(new JsonObject().put("name", name))
-                .map(discovery::getReference)
-                .flatMap(reference -> {
-                    HttpClient client = new HttpClient(reference.get());
-                    closed.setHandler(ar -> {
-                        // this will invoke HttpEndpointReference#close() which closes HttpClient,
-                        // so we do not have to call client.close() explicitly.
-                        reference.release();
-                    });
-                    return Observable.just(client);
-                })
-                .toSingle();
+        return Single.create(subscriber -> {
+            CircuitBreaker breaker = getBreaker(name);
+
+            // TODO handle 50x status code from other microservice, which should open breaker
+            Future<HttpClient> executed = breaker.execute(future -> {
+                discovery
+                    .getRecordObservable(new JsonObject().put("name", name))
+                    .map(discovery::getReference)
+                    .flatMap(reference -> {
+                        HttpClient client = new HttpClient(reference.get());
+                        closed.setHandler(ar -> {
+                            // this will invoke HttpEndpointReference#close() which closes HttpClient,
+                            // so we do not have to call client.close() explicitly.
+                            reference.release();
+                        });
+                        return Observable.just(client);
+                    })
+                    .toSingle()
+                    .subscribe(future::complete, future::fail);
+            });
+            executed.setHandlerObservable().toSingle().subscribe(subscriber);
+        });
     }
 }
