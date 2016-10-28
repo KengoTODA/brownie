@@ -10,10 +10,10 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import io.vertx.core.Future;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
+import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.eventbus.Message;
@@ -24,7 +24,7 @@ import io.vertx.rxjava.core.http.HttpClientRequest;
 import io.vertx.rxjava.core.http.HttpClientResponse;
 import io.vertx.rxjava.core.streams.Pump;
 import io.vertx.rxjava.core.streams.ReadStream;
-import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import jp.skypencil.brownie.MicroserviceClientFactory;
 import jp.skypencil.brownie.IdGenerator;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class EncodeServer extends AbstractVerticle {
 
     private final IdGenerator idGenerator;
 
-    private final ServiceDiscovery discovery;
+    private final MicroserviceClientFactory clientFactory;
 
     private final String directory = createDirectory();
 
@@ -190,15 +190,6 @@ public class EncodeServer extends AbstractVerticle {
     }
 
     private Single<HttpClient> createHttpClientForFileStorage(Future<Void> closed) {
-        return discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
-            .map(discovery::getReference)
-            .flatMap(reference -> {
-                HttpClient client = new HttpClient(reference.get());
-                closed.setHandler(ar -> {
-                    reference.release();
-                });
-                return Observable.just(client);
-            })
-            .toSingle();
+        return clientFactory.createClient("file-storage", closed);
     }
 }
