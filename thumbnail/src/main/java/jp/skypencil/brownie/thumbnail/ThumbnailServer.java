@@ -10,11 +10,11 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.rxjava.core.AbstractVerticle;
+import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.RxHelper;
 import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
@@ -30,11 +30,11 @@ import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import io.vertx.rxjava.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.Record;
+import jp.skypencil.brownie.MicroserviceClientFactory;
 import jp.skypencil.brownie.IdGenerator;
 import jp.skypencil.brownie.MimeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import rx.Observable;
 import rx.Single;
 import scala.Tuple2;
 
@@ -47,6 +47,8 @@ public class ThumbnailServer extends AbstractVerticle {
 
     private final ServiceDiscovery discovery;
 
+    private final MicroserviceClientFactory clientFactory;
+
     private final String directory = createDirectory();
 
     private final IdGenerator idGenerator;
@@ -56,7 +58,7 @@ public class ThumbnailServer extends AbstractVerticle {
     private String registration;
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(io.vertx.core.Future<Void> startFuture) throws Exception {
         registerEventListeners();
         Router router = createRouter();
 
@@ -79,7 +81,7 @@ public class ThumbnailServer extends AbstractVerticle {
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
+    public void stop(io.vertx.core.Future<Void> stopFuture) throws Exception {
         if (server == null) {
             stopFuture.fail(new IllegalStateException("This vertical has not been started yet"));
         } else {
@@ -242,16 +244,6 @@ public class ThumbnailServer extends AbstractVerticle {
     }
 
     private Single<HttpClient> createHttpClientForFileStorage(Future<Void> closed) {
-        Single<HttpClient> clientSingle = discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
-            .map(discovery::getReference)
-            .flatMap(reference -> {
-                HttpClient client = new HttpClient(reference.get());
-                closed.setHandler(v -> {
-                    reference.release();
-                });
-                return Observable.just(client);
-            })
-            .toSingle();
-        return clientSingle;
+        return clientFactory.createClient("file-storage", closed);
     }
 }

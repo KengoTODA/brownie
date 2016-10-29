@@ -67,6 +67,11 @@
         <version>${vertx.version}</version>
       </dependency>
       <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-circuit-breaker</artifactId>
+        <version>${vertx.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.fasterxml.uuid</groupId>
         <artifactId>java-uuid-generator</artifactId>
         <version>3.1.4</version>

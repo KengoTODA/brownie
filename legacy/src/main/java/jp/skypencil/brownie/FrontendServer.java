@@ -28,7 +28,6 @@ import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import io.vertx.rxjava.ext.web.handler.StaticHandler;
-import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import jp.skypencil.brownie.event.VideoUploadedEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +57,7 @@ public class FrontendServer extends AbstractVerticle {
      */
     private final String directory = createDirectory();
 
-    private final ServiceDiscovery discovery;
+    private final MicroserviceClientFactory clientFactory;
 
     @Nonnull
     private String createDirectory() {
@@ -178,19 +177,7 @@ public class FrontendServer extends AbstractVerticle {
      */
     @Nonnull
     private Single<HttpClient> createHttpClientForFileStorage(Future<Void> closed) {
-        Single<HttpClient> clientSingle = discovery.getRecordObservable(r -> r.getName().equals("file-storage"))
-            .map(discovery::getReference)
-            .flatMap(reference -> {
-                HttpClient client = new HttpClient(reference.get());
-                closed.setHandler(ar -> {
-                    // this will invoke HttpEndpointReference#close() which closes HttpClient,
-                    // so we do not have to call client.close() explicitly.
-                    reference.release();
-                });
-                return Observable.just(client);
-            })
-            .toSingle();
-        return clientSingle;
+        return clientFactory.createClient("file-storage", closed);
     }
 
     private void deleteFile(RoutingContext ctx, String fileId) {
