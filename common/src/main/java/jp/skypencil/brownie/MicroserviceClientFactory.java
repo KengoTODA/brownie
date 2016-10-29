@@ -60,7 +60,6 @@ public class MicroserviceClientFactory {
         return Single.create(subscriber -> {
             CircuitBreaker breaker = getBreaker(name);
 
-            // TODO handle 50x status code from other microservice, which should open breaker
             Future<HttpClient> executed = breaker.execute(future -> {
                 discovery
                     .getRecordObservable(new JsonObject().put("name", name))
