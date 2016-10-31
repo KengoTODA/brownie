@@ -185,10 +185,13 @@ public class FrontendServer extends AbstractVerticle {
         Future<Void> closed = Future.future();
         createHttpClientForFileStorage(closed)
         .flatMap(client -> {
-            HttpClientRequest req = client.delete("/file/" + fileId);
-            Observable<HttpClientResponse> result = req.toObservable();
-            req.end();
-            return result.toSingle();
+            Observable<HttpClientResponse> observable = Observable.create(subscriber -> {
+                HttpClientRequest clientReq = client.delete("/file/" + fileId);
+                Observable<HttpClientResponse> clientRes = clientReq.toObservable();
+                clientRes.subscribe(subscriber);
+                clientReq.end();
+            });
+            return observable.toSingle();
         })
         .doAfterTerminate(closed::complete)
         .subscribe(clientRes -> {
