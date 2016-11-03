@@ -6,12 +6,12 @@ jdk:
   - oraclejdk8
 install:
   - pushd legacy && npm install && popd
-  - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+  - ./mvnw install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 before_script:
   - docker run -d -p 25432:5432 -v "$(pwd)/file-storage/src/main/sql:/docker-entrypoint-initdb.d" --name postgres-file-storage -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
   - docker run -d -p 35432:5432 -v "$(pwd)/thumbnail/src/main/sql:/docker-entrypoint-initdb.d" --name postgres-thumbnail -e POSTGRES_PASSWORD=brownie -e POSTGRES_USER=brownie postgres:9
 script:
-  - mvn clean verify
+  - ./mvnw clean verify
 after_script:
   - docker stop postgres-file-storage
   - docker stop postgres-thumbnail
