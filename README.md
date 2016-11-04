@@ -1,6 +1,6 @@
 # Brownie
 
-Distributed video converter, based on [Vert.x v3](http://vertx.io/) and [RxJava](https://github.com/ReactiveX/RxJava).
+Distributed video converter, based on [Vert.x v3](http://vertx.io/) and [RxJava](https://github.com/ReactiveX/RxJava). Developed as a play field to learn about [Microservice Architecture (MSA)](http://www.martinfowler.com/articles/microservices.html) and [Reactive Systems](http://www.reactivemanifesto.org/).
 
 [![Build Status](https://travis-ci.org/KengoTODA/brownie.svg?branch=master)](https://travis-ci.org/KengoTODA/brownie)
 [![Coverage Status](https://coveralls.io/repos/github/KengoTODA/brownie/badge.svg?branch=master)](https://coveralls.io/github/KengoTODA/brownie?branch=master)
@@ -21,17 +21,20 @@ Distributed video converter, based on [Vert.x v3](http://vertx.io/) and [RxJava]
 # How to run
 
 ```
-$ mvn clean package
+$ pushd legacy && npm install && popd
+$ ./mvnw clean package
 $ java -DBROWNIE_MOUNTED_DIR=/tmp/brownie -jar target/brownie-*.jar
 ```
 or
 ```
-$ mvn clean package
+$ pushd legacy && npm install && popd
+$ ./mvnw clean package
 $ java -DBROWNIE_MOUNTED_DIR=/tmp/brownie -DBROWNIE_CLUSTER_HOST="localhost" -jar target/brownie-*.jar
 ```
 or
 ```
-$ mvn clean package
+$ pushd legacy && npm install && popd
+$ ./mvnw clean package
 $ docker-compose build
 $ docker-compose up
 ```
@@ -40,8 +43,9 @@ $ docker-compose up
 # How to test
 
 ```
+$ pushd legacy && npm install && popd
 $ docker-compose up -d --force-recreate file_storage_db thumbnail_db
-$ mvn clean verify
+$ ./mvnw clean verify
 ```
 
 # Copyright and license
